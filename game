@@ -1,0 +1,373 @@
+import streamlit as st
+from streamlit.components.v1 import html
+
+st.set_page_config(page_title="Dungeon 2D - Streamlit", layout="centered")
+st.title("Dungeon 2D (MVP) trên Streamlit")
+st.write("Click vào khung rồi dùng phím mũi tên hoặc WASD để di chuyển. Làm sạch căn hầm!")
+
+game_html = r"""
+<style>
+  body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; }
+  #gameContainer { display:flex; flex-direction:column; align-items:center; }
+  #hud { margin: 6px 0; color: #eee; }
+  button { margin-left: 8px; padding:6px 10px; }
+</style>
+<div id="gameContainer">
+  <div id="hud">
+    <span id="info"></span>
+    <button id="restartBtn">Restart</button>
+  </div>
+  <canvas id="game" width="800" height="500" style="border:1px solid #222; background:#111"></canvas>
+  <div style="color:#ccc; font-size:13px; margin-top:6px;">Click vào canvas để lấy focus. Phím: ←↑→↓ hoặc WASD. </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const info = document.getElementById('info');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const cols = 40;
+  const rows = 25;
+  const cell = Math.floor(Math.min(canvas.width / cols, canvas.height / rows));
+  const mapW = cols;
+  const mapH = rows;
+
+  let map = [];
+  let player = {};
+  let enemies = [];
+  let items = [];
+  let score = 0;
+  let turn = 0;
+
+  function createEmptyMap() {
+    map = new Array(mapH);
+    for (let y=0;y<mapH;y++){
+      map[y] = new Array(mapW).fill(1); // 1 = wall, 0 = floor
+    }
+  }
+
+  function placeRoomsAndCorridors() {
+    const rooms = [];
+    const maxRooms = 8;
+    for (let i=0;i<maxRooms;i++){
+      const w = randInt(4,8);
+      const h = randInt(4,6);
+      const x = randInt(1, mapW - w - 2);
+      const y = randInt(1, mapH - h - 2);
+
+      // check overlap
+      let ok = true;
+      for (let yy = y-1; yy < y+h+1; yy++) {
+        for (let xx = x-1; xx < x+w+1; xx++) {
+          if (yy<0||yy>=mapH||xx<0||xx>=mapW) { ok = false; break; }
+          if (map[yy][xx] === 0) { ok = false; break; }
+        }
+        if (!ok) break;
+      }
+      if (!ok) continue;
+
+      // carve room
+      for (let yy = y; yy < y+h; yy++) {
+        for (let xx = x; xx < x+w; xx++) {
+          map[yy][xx] = 0;
+        }
+      }
+      rooms.push({x: x + Math.floor(w/2), y: y + Math.floor(h/2)});
+    }
+
+    // connect rooms
+    for (let i=1;i<rooms.length;i++){
+      const a = rooms[i-1];
+      const b = rooms[i];
+      // horizontal then vertical
+      let x = a.x, y = a.y;
+      while (x !== b.x) {
+        map[y][x] = 0;
+        x += (b.x > x) ? 1 : -1;
+      }
+      while (y !== b.y) {
+        map[y][x] = 0;
+        y += (b.y > y) ? 1 : -1;
+      }
+    }
+    return rooms;
+  }
+
+  function randInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+
+  function placeEntities(rooms) {
+    if (rooms.length === 0) {
+      // fallback: find first floor
+      for (let y=0;y<mapH;y++){
+        for (let x=0;x<mapW;x++){
+          if (map[y][x] === 0) { player = {x,y,hp:10,maxHp:10,atk:3}; break; }
+        }
+        if (player.x !== undefined) break;
+      }
+    } else {
+      player = {x: rooms[0].x, y: rooms[0].y, hp: 10, maxHp:10, atk:3};
+    }
+    enemies = [];
+    items = [];
+    // spawn enemies in other rooms
+    for (let i=1;i<rooms.length;i++){
+      const r = rooms[i];
+      const ecount = randInt(1,2);
+      for (let k=0;k<ecount;k++){
+        // try slight offset inside room
+        const ex = Math.max(1, Math.min(mapW-2, r.x + randInt(-1,1)));
+        const ey = Math.max(1, Math.min(mapH-2, r.y + randInt(-1,1)));
+        if (ex === player.x && ey === player.y) continue;
+        enemies.push({x:ex, y:ey, hp: 4, atk:2});
+      }
+      // place 50% chance item in room
+      if (Math.random() < 0.5) {
+        const ix = Math.max(1, Math.min(mapW-2, r.x + randInt(-1,1)));
+        const iy = Math.max(1, Math.min(mapH-2, r.y + randInt(-1,1)));
+        if (!(ix===player.x && iy===player.y)) items.push({x:ix,y:iy,type:'potion'});
+      }
+    }
+    // ensure at least a few items in map randomly
+    if (items.length < 2) {
+      for (let i=0;i<2;i++){
+        let attempts=0;
+        while(attempts<50){
+          const x = randInt(1,mapW-2), y = randInt(1,mapH-2);
+          if (map[y][x]===0 && !occupied(x,y)) { items.push({x,y,type:'potion'}); break; }
+          attempts++;
+        }
+      }
+    }
+    score = 0;
+    turn = 0;
+  }
+
+  function occupied(x,y) {
+    if (player.x===x && player.y===y) return true;
+    for (const e of enemies) if (e.x===x && e.y===y) return true;
+    for (const it of items) if (it.x===x && it.y===y) return true;
+    return false;
+  }
+
+  function render() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // center map in canvas
+    const mapPixelW = mapW * cell;
+    const mapPixelH = mapH * cell;
+    const offsetX = Math.floor((canvas.width - mapPixelW) / 2);
+    const offsetY = Math.floor((canvas.height - mapPixelH) / 2);
+
+    // draw tiles
+    for (let y=0;y<mapH;y++){
+      for (let x=0;x<mapW;x++){
+        const px = offsetX + x*cell;
+        const py = offsetY + y*cell;
+        if (map[y][x] === 1) {
+          ctx.fillStyle = '#222';
+          ctx.fillRect(px, py, cell, cell);
+        } else {
+          ctx.fillStyle = '#2b2b2b';
+          ctx.fillRect(px, py, cell, cell);
+          // floor variation
+          if ((x+y)%2===0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.01)';
+            ctx.fillRect(px,py,cell,cell);
+          }
+        }
+      }
+    }
+
+    // items
+    for (const it of items) {
+      const px = offsetX + it.x*cell;
+      const py = offsetY + it.y*cell;
+      if (it.type === 'potion') {
+        ctx.fillStyle = '#ffcc00';
+        ctx.beginPath();
+        ctx.arc(px+cell/2, py+cell/2, cell*0.28, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    // enemies
+    for (const e of enemies) {
+      const px = offsetX + e.x*cell;
+      const py = offsetY + e.y*cell;
+      ctx.fillStyle = '#c0392b';
+      ctx.fillRect(px+2, py+2, cell-4, cell-4);
+      // HP bar
+      ctx.fillStyle = 'black';
+      ctx.fillRect(px+2, py+2, cell-4, 4);
+      ctx.fillStyle = '#27ae60';
+      const w = Math.max(0, Math.floor((cell-4) * (e.hp / 4)));
+      ctx.fillRect(px+2, py+2, w, 4);
+    }
+
+    // player
+    const pxp = offsetX + player.x*cell;
+    const pyp = offsetY + player.y*cell;
+    ctx.fillStyle = '#3498db';
+    ctx.beginPath();
+    ctx.arc(pxp+cell/2, pyp+cell/2, cell*0.36, 0, Math.PI*2);
+    ctx.fill();
+    // player HP bar
+    ctx.fillStyle = 'black';
+    ctx.fillRect(pxp+2, pyp + cell - 8, cell-4, 6);
+    ctx.fillStyle = '#e74c3c';
+    const pw = Math.max(0, Math.floor((cell-4) * (player.hp / player.maxHp)));
+    ctx.fillRect(pxp+2, pyp + cell - 8, pw, 6);
+
+    // HUD text (overlay top-left)
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px Arial';
+    const hudText = `HP: ${player.hp}/${player.maxHp}   Score: ${score}   Turn: ${turn}   Enemies: ${enemies.length}`;
+    ctx.fillText(hudText, 8, 20);
+
+    // update info div too
+    info.textContent = `HP: ${player.hp}/${player.maxHp}   Score: ${score}   Turn: ${turn}   Enemies: ${enemies.length}`;
+  }
+
+  function restart() {
+    createEmptyMap();
+    const rooms = placeRoomsAndCorridors();
+    placeEntities(rooms);
+    render();
+  }
+
+  function getEnemyAt(x,y){
+    for (let i=0;i<enemies.length;i++){
+      if (enemies[i].x === x && enemies[i].y === y) return {enemy: enemies[i], idx:i};
+    }
+    return null;
+  }
+
+  function getItemAt(x,y){
+    for (let i=0;i<items.length;i++){
+      if (items[i].x === x && items[i].y === y) return {item: items[i], idx:i};
+    }
+    return null;
+  }
+
+  function playerAttackEnemy(eidx) {
+    const e = enemies[eidx];
+    e.hp -= player.atk;
+    if (e.hp <= 0) {
+      // kill
+      enemies.splice(eidx,1);
+      score += 10;
+    } else {
+      // enemy retaliates
+      player.hp -= e.atk;
+      if (player.hp < 0) player.hp = 0;
+    }
+  }
+
+  function stepEnemies() {
+    for (const e of enemies) {
+      // if adjacent to player, attack
+      const dx = player.x - e.x;
+      const dy = player.y - e.y;
+      const adx = Math.abs(dx), ady = Math.abs(dy);
+      if ((adx + ady) === 1) {
+        // attack
+        player.hp -= e.atk;
+        if (player.hp < 0) player.hp = 0;
+        continue;
+      }
+      // move one step greedily towards player if possible
+      let nx = e.x, ny = e.y;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        nx += Math.sign(dx);
+        if (canMoveTo(nx, ny)) { e.x = nx; e.y = ny; continue; }
+        // try vertical
+        nx = e.x; ny = e.y + Math.sign(dy);
+        if (canMoveTo(nx, ny)) { e.x = nx; e.y = ny; continue; }
+      } else {
+        ny += Math.sign(dy);
+        if (canMoveTo(nx, ny)) { e.x = nx; e.y = ny; continue; }
+        nx = e.x + Math.sign(dx); ny = e.y;
+        if (canMoveTo(nx, ny)) { e.x = nx; e.y = ny; continue; }
+      }
+      // else try random walk
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+      const r = dirs[Math.floor(Math.random()*dirs.length)];
+      if (canMoveTo(e.x + r[0], e.y + r[1])) { e.x += r[0]; e.y += r[1]; }
+    }
+  }
+
+  function canMoveTo(x,y){
+    if (x<0||x>=mapW||y<0||y>=mapH) return false;
+    if (map[y][x] !== 0) return false;
+    if (player.x === x && player.y === y) return false;
+    for (const e of enemies) if (e.x === x && e.y === y) return false;
+    return true;
+  }
+
+  function playerMove(dx,dy) {
+    if (player.hp <= 0) return;
+    const nx = player.x + dx;
+    const ny = player.y + dy;
+    if (nx<0||nx>=mapW||ny<0||ny>=mapH) return;
+    if (map[ny][nx] === 1) return; // wall
+    const enemyInfo = getEnemyAt(nx,ny);
+    if (enemyInfo) {
+      // attack
+      playerAttackEnemy(enemyInfo.idx);
+    } else {
+      // move
+      player.x = nx; player.y = ny;
+      // pick item?
+      const itInfo = getItemAt(nx,ny);
+      if (itInfo) {
+        if (itInfo.item.type === 'potion') {
+          player.hp = Math.min(player.maxHp, player.hp + 4);
+        }
+        items.splice(itInfo.idx,1);
+        score += 5;
+      }
+    }
+    // after player action, enemies act
+    stepEnemies();
+    turn++;
+    render();
+    checkGameOver();
+  }
+
+  function checkGameOver(){
+    if (player.hp <= 0) {
+      // show game over
+      setTimeout(()=> {
+        alert('Game Over! Điểm: ' + score);
+      }, 50);
+    } else if (enemies.length === 0) {
+      setTimeout(()=> {
+        alert('Bạn thắng! Điểm: ' + score);
+      }, 50);
+    }
+  }
+
+  // input
+  window.addEventListener('keydown', (e) => {
+    const key = e.key;
+    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','w','s','d','A','W','S','D'].indexOf(key) === -1) return;
+    e.preventDefault();
+    if (key === 'ArrowLeft' || key === 'a' || key === 'A') playerMove(-1,0);
+    if (key === 'ArrowRight' || key === 'd' || key === 'D') playerMove(1,0);
+    if (key === 'ArrowUp' || key === 'w' || key === 'W') playerMove(0,-1);
+    if (key === 'ArrowDown' || key === 's' || key === 'S') playerMove(0,1);
+  });
+
+  canvas.addEventListener('click', () => { canvas.tabIndex = 1000; canvas.focus(); });
+
+  restartBtn.addEventListener('click', () => { restart(); });
+
+  // init
+  restart();
+
+})();
+</script>
+"""
+
+html(game_html, height=600)
