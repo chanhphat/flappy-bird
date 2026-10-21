@@ -316,6 +316,7 @@ function renderShop() {
         }
         return;
       }
+
       state.selectedFish = fish.id;
       saveProgress();
       renderShop();
@@ -632,6 +633,7 @@ function drawBackground() {
     for (const c of game.coral) {
       ctx.save();
       ctx.translate(c.x, c.baseY);
+
       ctx.fillStyle = c.color;
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -656,16 +658,33 @@ function drawBackground() {
       ctx.scale(f.dir, 1);
 
       ctx.fillStyle = f.color;
-      ctx.shadowColor = f.color;
-      ctx.shadowBlur = 10;
-
       ctx.beginPath();
       ctx.ellipse(0, 0, f.size + 4, f.size * 0.8, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.fillStyle = "#ffffff";
       ctx.beginPath();
-      ctx.arc(f.size * 0.7, -1, 1.2, 0, Math.PI * 2);
+      ctx.arc(f.size * 0.6, -1, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#111111";
+      ctx.beginPath();
+      ctx.arc(f.size * 0.7, -1.2, 0.55, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = f.color;
+      ctx.beginPath();
+      ctx.moveTo(-f.size - 4, 0);
+      ctx.lineTo(-f.size - 15, -4);
+      ctx.lineTo(-f.size - 15, 4);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(f.size + 3, 0);
+      ctx.lineTo(f.size + 12, -5);
+      ctx.lineTo(f.size + 12, 5);
+      ctx.closePath();
       ctx.fill();
 
       ctx.restore();
