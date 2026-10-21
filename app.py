@@ -5,7 +5,7 @@ st.set_page_config(page_title="Fishy Dive", page_icon="🐠", layout="centered")
 st.title("Fishy Dive")
 st.caption("Nhấn Space hoặc click chuột để bơi")
 
-html = '''
+html = """
 <div id="game-wrapper" style="display:flex; justify-content:center; align-items:center; margin-top:10px;">
   <div id="game" style="
       position:relative;
@@ -186,5 +186,210 @@ function drawSeaweed(x, y, scale) {
   ctx.beginPath();
   ctx.moveTo(0, 0);
 
-  for (let*
+  for (let i = 0; i < 5; i++) {
+    const px = (i % 2 === 0 ? -8 : 8) * (1 + i * 0.25);
+    const py = -20 - i * 12;
+    ctx.quadraticCurveTo(px, py, 0, -30 - i * 14);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawBackground() {
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, "#071f39");
+  grad.addColorStop(0.5, "#0d4f7f");
+  grad.addColorStop(1, "#0aa4c8");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "rgba(255,255,255,0.09)";
+  ctx.lineWidth = 1;
+  for (let y = 30; y < canvas.height; y += 30) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.bezierCurveTo(canvas.width * 0.2, y - 12, canvas.width * 0.7, y + 12, canvas.width, y);
+    ctx.stroke();
+  }
+
+  for (let x = 0; x < canvas.width; x += 26) {
+    drawSeaweed(x, canvas.height - 80, 1 + (x % 3) * 0.32);
+  }
+
+  ctx.fillStyle = "#1d5e4d";
+  ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
+
+  ctx.fillStyle = "#347d66";
+  for (let x = 0; x < canvas.width; x += 38) {
+    ctx.beginPath();
+    ctx.moveTo(x, canvas.height);
+    ctx.lineTo(x + 18, canvas.height - 80);
+    ctx.lineTo(x + 36, canvas.height);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  for (const b of game.bubbles) {
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawFish() {
+  const f = game.fish;
+
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  ctx.rotate(f.rot);
+
+  // bóng dưới cá
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
+  ctx.beginPath();
+  ctx.ellipse(0, 18, 26, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // thân chính
+  ctx.fillStyle = "#4ec0d8";
+  ctx.beginPath();
+  ctx.moveTo(-26, 0);
+  ctx.quadraticCurveTo(-18, -18, 8, -18);
+  ctx.quadraticCurveTo(26, -15, 32, 0);
+  ctx.quadraticCurveTo(26, 17, 8, 18);
+  ctx.quadraticCurveTo(-18, 18, -26, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // sáng trên thân
+  ctx.fillStyle = "rgba(255,255,255,0.28)";
+  ctx.beginPath();
+  ctx.ellipse(-4, -2, 15, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // đốm đen lớn
+  ctx.fillStyle = "#1a2d3a";
+  ctx.beginPath();
+  ctx.ellipse(-2, 0, 9, 11, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // sọc đen dài
+  ctx.strokeStyle = "#1b2d3a";
+  ctx.lineWidth = 2;
+  for (let i = -18; i <= 18; i += 7) {
+    ctx.beginPath();
+    ctx.moveTo(i - 3, -8);
+    ctx.quadraticCurveTo(i + 8, 0, i, 11);
+    ctx.stroke();
+  }
+
+  // đốm nhỏ
+  ctx.fillStyle = "#1a2430";
+  ctx.beginPath();
+  ctx.ellipse(14, 3, 6, 8, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#1a2430";
+  ctx.beginPath();
+  ctx.ellipse(4, -8, 5, 7, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  // đuôi
+  ctx.fillStyle = "#f56d4d";
+  ctx.beginPath();
+  ctx.moveTo(-30, 0);
+  ctx.lineTo(-52, -18);
+  ctx.lineTo(-52, 0);
+  ctx.lineTo(-52, 18);
+  ctx.closePath();
+  ctx.fill();
+
+  // đuôi phụ
+  ctx.fillStyle = "#ff8f67";
+  ctx.beginPath();
+  ctx.moveTo(-28, 0);
+  ctx.lineTo(-46, -9);
+  ctx.lineTo(-46, 9);
+  ctx.closePath();
+  ctx.fill();
+
+  // vây lưng
+  ctx.fillStyle = "#f7b152";
+  ctx.beginPath();
+  ctx.moveTo(0, -12);
+  ctx.lineTo(16, -27);
+  ctx.lineTo(18, -10);
+  ctx.closePath();
+  ctx.fill();
+
+  // vây bụng
+  ctx.fillStyle = "#f4805d";
+  ctx.beginPath();
+  ctx.moveTo(3, 11);
+  ctx.lineTo(18, 27);
+  ctx.lineTo(17, 9);
+  ctx.closePath();
+  ctx.fill();
+
+  // vây ngực
+  ctx.fillStyle = "#ff9d67";
+  ctx.beginPath();
+  ctx.moveTo(6, 4);
+  ctx.lineTo(18, 14);
+  ctx.lineTo(12, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // mắt
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.arc(15, -5, 6.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#111";
+  ctx.beginPath();
+  ctx.arc(17, -5, 2.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // sáng mắt
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.beginPath();
+  ctx.arc(13, -7, 1.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // miệng
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(22, 0);
+  ctx.lineTo(30, 4);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawRock(rock) {
+  const x = rock.x;
+  const width = rock.width;
+  const topHeight = rock.topHeight;
+  const gap = rock.gap;
+
+  ctx.fillStyle = "#7a8d8d";
+  ctx.beginPath();
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x + width, 0);
+  ctx.lineTo(x + width + 8, topHeight - 18);
+  ctx.lineTo(x + width * 0.6, topHeight + 10);
+  ctx.lineTo(x + width * 0.3, topHeight - 6);
+  ctx.lineTo(x - 4, topHeight - 10);
+  ctx.closePath();
+  ctx.fill();
+
+  const bottomY = topHeight + gap;
+  ctx.fillStyle = "#7a8d8d";
+  ctx.beginPath();
+  ctx.moveTo(x, canvas.height - 80);
+  ctx.lineTo(x + width, canvas.height - 80);
+  ctx.lineTo(x + width + 10, bottomY + 18);
+  ctx.lineTo(x + width **
 
