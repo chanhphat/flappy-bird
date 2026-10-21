@@ -5,7 +5,7 @@ st.set_page_config(page_title="Fishy Dive", page_icon="🐠", layout="centered")
 st.title("Fishy Dive")
 st.caption("Nhấn Space hoặc click chuột để bơi")
 
-html = """
+html = '''
 <div id="game-wrapper" style="display:flex; justify-content:center; align-items:center; margin-top:10px;">
   <div id="game" style="
       position:relative;
@@ -15,7 +15,7 @@ html = """
       border-radius:14px;
       overflow:hidden;
       background:linear-gradient(#061f39, #0d4f7f 50%, #0aa4c8);
-      box-shadow:0 12px 25px rgba(0,0,0,0.25);
+      box-shadow:0 12px 25px rgba(0, 0, 0, 0.25);
   ">
     <div id="scoreText" style="
       position:absolute; top:10px; left:0; width:100%;
@@ -145,5 +145,46 @@ function update(dt) {
     rock.x -= 2.3 * dt * 0.06;
 
     if (!rock.passed && rock.x + rock.width < game.fish.x) {
-      rock.passed = true*
+      rock.passed = true;
+      game.score += 1;
+      scoreText.textContent = game.score;
+    }
+
+    const fishLeft = game.fish.x - game.fish.r;
+    const fishRight = game.fish.x + game.fish.r;
+    const fishTop = game.fish.y - game.fish.r;
+    const fishBottom = game.fish.y + game.fish.r;
+
+    const rockLeft = rock.x;
+    const rockRight = rock.x + rock.width;
+    const topBottom = rock.topHeight;
+    const bottomTop = rock.topHeight + rock.gap;
+
+    const hitX = fishRight > rockLeft && fishLeft < rockRight;
+    const hitTop = fishTop < topBottom;
+    const hitBottom = fishBottom > bottomTop;
+
+    if (hitX && (hitTop || hitBottom)) {
+      endGame();
+    }
+  }
+
+  game.rocks = game.rocks.filter(r => r.x + r.width > -20);
+
+  if (game.fish.y - game.fish.r <= 0 || game.fish.y + game.fish.r >= canvas.height - 80) {
+    endGame();
+  }
+}
+
+function drawSeaweed(x, y, scale) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+
+  ctx.strokeStyle = "#18d38a";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+
+  for (let*
 
