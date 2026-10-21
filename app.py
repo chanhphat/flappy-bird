@@ -6,7 +6,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Fishy Dive", page_icon="🐠", layout="centered")
 st.title("Fishy Dive")
-st.caption("Chơi, kiếm điểm, mở khóa skin cá mới")
+st.caption("Chơi, kiếm điểm, mua cá mới")
 
 html = """
 <style>
@@ -57,7 +57,11 @@ html = """
     font-weight: bold;
     margin-bottom: 12px;
   }
-  .subtitle { font-size: 15px; opacity: 0.9; margin-bottom: 18px; }
+  .subtitle {
+    font-size: 15px;
+    opacity: 0.9;
+    margin-bottom: 18px;
+  }
   .score-badge {
     margin-bottom: 18px;
     font-size: 16px;
@@ -83,9 +87,21 @@ html = """
     transform: translateY(-1px);
     filter: brightness(1.05);
   }
-  .primary { background: linear-gradient(#5ad0ff, #2aa6df); color: #03283d; }
-  .secondary { background: linear-gradient(#ffcd67, #f7a33a); color: #4d2a00; }
-  .shop-list { display: grid; gap: 12px; max-height: 340px; overflow-y: auto; margin-top: 12px; }
+  .primary {
+    background: linear-gradient(#5ad0ff, #2aa6df);
+    color: #03283d;
+  }
+  .secondary {
+    background: linear-gradient(#ffcd67, #f7a33a);
+    color: #4d2a00;
+  }
+  .shop-list {
+    display: grid;
+    gap: 12px;
+    max-height: 340px;
+    overflow-y: auto;
+    margin-top: 12px;
+  }
   .fish-card {
     display: grid;
     grid-template-columns: 60px 1fr auto;
@@ -134,10 +150,21 @@ html = """
     font-weight: bold;
     cursor: pointer;
   }
-  .shop-action.buy { background: linear-gradient(#ffe785, #ffbf47); color: #4a2b00; }
-  .shop-action.use { background: linear-gradient(#94f7c9, #46d89e); color: #0d3d2e; }
+  .shop-action.buy {
+    background: linear-gradient(#ffe785, #ffbf47);
+    color: #4a2b00;
+  }
+  .shop-action.use {
+    background: linear-gradient(#94f7c9, #46d89e);
+    color: #0d3d2e;
+  }
   .small-text { font-size: 12px; opacity: 0.8; }
-  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
 </style>
 
 <div id="game-shell">
@@ -172,8 +199,5 @@ html = """
   <div id="gameOverPanel" class="panel hidden">
     <div class="panel-box">
       <div class="title" style="font-size:28px;">Game Over</div>
-      <div class="subtitle" id="gameOverSummary">Bạn đã kiếm được 0 điểm</div>
-      <div class="button-row">
-        <button id="playAgainBtn" class="primary">Chơi lại</button>
-        <button id="shopFromGameBtn" class="secondary">Cửa hàng</button>*
+      <div class="subtitle" id="gameOverSummary">Bạn đã kiếm được 0 điểm</div>*
 
