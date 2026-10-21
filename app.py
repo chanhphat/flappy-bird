@@ -1,6 +1,5 @@
 cd /mount/src/flappy-bird
-rm -f app.py
-cat > app.py <<'PY'
+
 import streamlit as st
 import streamlit.components.v1 as components
 
