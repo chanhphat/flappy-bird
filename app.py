@@ -21,12 +21,12 @@ html = '''
     border: 4px solid #123d5d;
     border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 12px 25px rgba(0,0,0,0.25);
     background: linear-gradient(#061f39, #0d4f7f 50%, #0aa4c8);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.25);
   }
   #scoreText {
     position: absolute;
-    top: 10px;
+    top: 12px;
     left: 0;
     width: 100%;
     text-align: center;
@@ -63,16 +63,8 @@ html = '''
     text-align: center;
     box-shadow: 0 10px 30px rgba(0,0,0,0.25);
   }
-  .title {
-    font-size: 34px;
-    font-weight: bold;
-    margin-bottom: 12px;
-  }
-  .subtitle {
-    font-size: 15px;
-    opacity: 0.9;
-    margin-bottom: 18px;
-  }
+  .title { font-size: 34px; font-weight: bold; margin-bottom: 12px; }
+  .subtitle { font-size: 15px; opacity: 0.9; margin-bottom: 18px; }
   .score-badge { margin-bottom: 18px; font-size: 16px; font-weight: bold; color: #dff7ff; }
   .button-row { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
   button {
@@ -82,7 +74,6 @@ html = '''
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.2s ease;
   }
   button:hover { transform: translateY(-1px); filter: brightness(1.05); }
   .primary { background: linear-gradient(#5ad0ff, #2aa6df); color: #03283d; }
@@ -93,7 +84,7 @@ html = '''
     grid-template-columns: 60px 1fr auto;
     align-items: center;
     gap: 10px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 12px;
     padding: 8px 10px;
@@ -155,5 +146,49 @@ html = '''
         <button id="startBtn" class="primary">Chơi</button>
         <button id="shopBtn" class="secondary">Cửa hàng</button>
       </div>
-    </div*
+    </div>
+  </div>
+
+  <div id="shopScreen" class="panel hidden">
+    <div class="panel-box">
+      <div class="title" style="font-size:28px;">Cửa hàng cá</div>
+      <div class="row">
+        <div class="small-text">Điểm hiện có</div>
+        <div class="small-text" id="shopPoints">0</div>
+      </div>
+      <div id="shopList" class="shop-list"></div>
+      <div class="button-row" style="margin-top:16px;">
+        <button id="backToMenuBtn" class="secondary">Quay lại</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameOverScreen" class="panel hidden">
+    <div class="panel-box">
+      <div class="title" style="font-size:28px;">Game Over</div>
+      <div class="subtitle" id="gameOverMessage">Bạn đã kiếm được 0 điểm</div>
+      <div class="button-row">
+        <button id="playAgainBtn" class="primary">Chơi lại</button>
+        <button id="shopFromGameBtn" class="secondary">Cửa hàng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const scoreText = document.getElementById("scoreText");
+const startScreen = document.getElementById("startScreen");
+const shopScreen = document.getElementById("shopScreen");
+const gameOverScreen = document.getElementById("gameOverScreen");
+const homePoints = document.getElementById("homePoints");
+const shopPoints = document.getElementById("shopPoints");
+const shopList = document.getElementById("shopList");
+const gameOverMessage = document.getElementById("gameOverMessage");
+
+const fishCatalog = [
+  { id: "classic", name: "Cá xanh", price: 0, kind: "classic", body: "#4ec0d8", fin: "#f7b152", accent: "#f4805d", shadow: "#1a2d3a" },
+  { id: "coral", name: "Cá san hô", price: 12, kind: "classic", body: "#ff8e5d", fin: "#ffd166", accent: "#ff6b6b", shadow: "#7a3a2c" },
+  { id: "moon", name: "Cá trăng", price: 20, kind: "classic", body: "#c4c7ff", fin](#)*
 
