@@ -48,14 +48,14 @@ html = '''
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(4,16,30,0.6);
+    background: rgba(4, 16, 30, 0.6);
     backdrop-filter: blur(3px);
     z-index: 10;
   }
   .panel.hidden { display: none; }
   .panel-box {
     width: 82%;
-    background: rgba(18,38,60,0.9);
+    background: rgba(18, 38, 60, 0.9);
     border: 2px solid rgba(255,255,255,0.2);
     border-radius: 16px;
     padding: 24px 20px;
@@ -190,5 +190,139 @@ const gameOverMessage = document.getElementById("gameOverMessage");
 const fishCatalog = [
   { id: "classic", name: "Cá xanh", price: 0, kind: "classic", body: "#4ec0d8", fin: "#f7b152", accent: "#f4805d", shadow: "#1a2d3a" },
   { id: "coral", name: "Cá san hô", price: 12, kind: "classic", body: "#ff8e5d", fin: "#ffd166", accent: "#ff6b6b", shadow: "#7a3a2c" },
-  { id: "moon", name: "Cá trăng", price: 20, kind: "classic", body: "#c4c7ff", fin](#)*
+  { id: "moon", name: "Cá trăng", price: 20, kind: "classic", body: "#c4c7ff", fin: "#a7d8ff", accent: "#f7d6e0", shadow: "#3d4a8d" },
+  { id: "forest", name: "Cá rừng", price: 28, kind: "classic", body: "#59d38a", fin: "#a4efb7", accent: "#fbdc7a", shadow: "#215a42" },
+  { id: "royal", name: "Cá hoàng gia", price: 40, kind: "classic", body: "#d7b3ff", fin: "#ffd86b", accent: "#f39bff", shadow: "#563c79" },
+  { id: "neon", name: "Cá neon", price: 35, kind: "classic", body: "#45f0d5", fin: "#ffeb66", accent: "#ff7eea", shadow: "#1f5e6a" },
+  { id: "whale", name: "Cá voi", price: 500, kind: "whale", body: "#92c7d2", fin: "#dfeaf7", accent: "#6aa7b5", shadow: "#2d4d59" },
+  { id: "shark", name: "Cá mập", price: 420, kind: "shark", body: "#8c9aa3", fin: "#d8dee5", accent: "#4f6570", shadow: "#2d3942" },
+  { id: "dolphin", name: "Cá heo", price: 200, kind: "dolphin", body: "#5db8d7", fin: "#f4d35e", accent: "#e9f7ff", shadow: "#234c63" },
+  { id: "moonfish", name: "Cá mặt trăng", price: 150, kind: "moonfish", body: "#f6e6ff", fin: "#ffe59a", accent: "#d8c0ff", shadow: "#6f5d90" }
+];
+
+const storage = {
+  keyPoints: "fishy_points",
+  keyUnlocked: "fishy_unlocked",
+  keySelected: "fishy_selected"
+};
+
+const state = {
+  points: Number(localStorage.getItem(storage.keyPoints) || 0),
+  unlocked: JSON.parse(localStorage.getItem(storage.keyUnlocked) || '["classic"]'),
+  selectedFish: localStorage.getItem(storage.keySelected) || "classic",
+  screen: "start"
+};
+
+function saveProgress() {
+  localStorage.setItem(storage.keyPoints, String(state.points));
+  localStorage.setItem(storage.keyUnlocked, JSON.stringify(state.unlocked));
+  localStorage.setItem(storage.keySelected, state.selectedFish);
+}
+
+function getSelectedFish() {
+  return fishCatalog.find(f => f.id === state.selectedFish) || fishCatalog[0];
+}
+
+function updatePointDisplays() {
+  homePoints.textContent = state.points;
+  shopPoints.textContent = state.points;
+}
+
+function showScreen(name) {
+  state.screen = name;
+  startScreen.classList.toggle("hidden", name !== "start");
+  shopScreen.classList.toggle("hidden", name !== "shop");
+  gameOverScreen.classList.toggle("hidden", name !== "gameover");
+  updatePointDisplays();
+}
+
+function renderShop() {
+  shopList.innerHTML = "";
+  for (const fish of fishCatalog) {
+    const unlocked = state.unlocked.includes(fish.id);
+    const selected = state.selectedFish === fish.id;
+
+    const card = document.createElement("div");
+    card.className = "fish-card";
+    card.style.setProperty("--fish-color", fish.body);
+
+    const fishView = document.createElement("div");
+    fishView.className = "fish-mini";
+    fishView.style.setProperty("--fish-color", fish.body);
+
+    const textBlock = document.createElement("div");
+    textBlock.innerHTML = `
+      <div class="fish-name">${fish.name}</div>
+      <div class="fish-meta">${unlocked ? (selected ? "Đang sử dụng" : "Đã mua") : `${fish.price} điểm`}</div>
+    `;
+
+    const actionBtn = document.createElement("button");
+    actionBtn.className = "shop-action " + (unlocked ? "use" : "buy");
+    actionBtn.textContent = unlocked ? (selected ? "Đang dùng" : "Dùng") : "Mua";
+
+    actionBtn.addEventListener("click", () => {
+      if (!unlocked) {
+        if (state.points >= fish.price) {
+          state.points -= fish.price;
+          state.unlocked.push(fish.id);
+          saveProgress();
+          renderShop();
+          updatePointDisplays();
+        }
+        return;
+      }
+      state.selectedFish = fish.id;
+      saveProgress();
+      renderShop();
+    });
+
+    card.appendChild(fishView);
+    card.appendChild(textBlock);
+    card.appendChild(actionBtn);
+    shopList.appendChild(card);
+  }
+}
+
+document.getElementById("startBtn").addEventListener("click", () => {
+  showScreen("game");
+  startGame();
+});
+
+document.getElementById("shopBtn").addEventListener("click", () => {
+  renderShop();
+  showScreen("shop");
+});
+
+document.getElementById("backToMenuBtn").addEventListener("click", () => {
+  showScreen("start");
+});
+
+document.getElementById("shopFromGameBtn").addEventListener("click", () => {
+  renderShop();
+  showScreen("shop");
+});
+
+document.getElementById("playAgainBtn").addEventListener("click", () => {
+  showScreen("game");
+  startGame();
+});
+
+const game = {
+  running: false,
+  over: false,
+  score: 0,
+  lastTime: 0,
+  spawnTimer: 0,
+  fish: { x: 110, y: 310, r: 18, vy: 0, rot: 0 },
+  rocks: [],
+  bubbles: [],
+  seaweeds: [],
+  tinyFish: []
+};
+
+function createBackgroundLife() {
+  game.seaweeds = [];
+  game.tinyFish = [];
+  for (let i = 0; i < 18; i++) {
+    game.seawe`*
 
