@@ -1,216 +1,431 @@
 import streamlit as st
-import random
+import streamlit.components.v1 as components
 
-# --- Config ---
-MAP_SIZE = 10
-WALL_PROB = 0.12
-NUM_ENEMIES = 8
-NUM_TREASURES = 6
+st.set_page_config(page_title="Fishy Dive", page_icon="🐠", layout="centered")
+st.title("Fishy Dive")
+st.caption("Nhấn Space hoặc click chuột để bơi")
 
+html = """
+<div id="game-wrapper" style="display:flex; justify-content:center; align-items:center; margin-top:10px;">
+  <div id="game" style="
+      position:relative;
+      width:430px;
+      height:620px;
+      border:4px solid #123d5d;
+      border-radius:14px;
+      overflow:hidden;
+      background:linear-gradient(#061f39, #0d4f7f 50%, #0aa4c8);
+      box-shadow:0 12px 25px rgba(0, 0, 0, 0.25);
+  ">
+    <div id="scoreText" style="
+      position:absolute; top:10px; left:0; width:100%;
+      text-align:center; color:white; font-weight:bold; font-size:34px;
+      text-shadow:2px 2px 0 #000; pointer-events:none;
+    ">0</div>
 
-# --- Helpers ---
-def make_empty_map(size, wall_prob):
-    grid = []
-    for y in range(size):
-        row = []
-        for x in range(size):
-            if random.random() < wall_prob:
-                row.append("#")
-            else:
-                row.append(".")
-        grid.append(row)
-    return grid
+    <canvas id="gameCanvas" width="430" height="620"></canvas>
 
+    <div id="overlay" style="
+      position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+      background:rgba(0,0,0,0.35); color:white; padding:18px 22px;
+      border-radius:12px; text-align:center; font-size:21px; line-height:1.5;
+      min-width:220px; box-shadow:0 8px 20px rgba(0,0,0,0.15);
+    ">Nhấn Space / Click để chơi</div>
+  </div>
+</div>
 
-def place_item(grid, symbol):
-    size = len(grid)
-    while True:
-        x = random.randrange(size)
-        y = random.randrange(size)
-        if grid[y][x] == ".":
-            if symbol != ".":
-                grid[y][x] = symbol
-            return (x, y)
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const overlay = document.getElementById("overlay");
+const scoreText = document.getElementById("scoreText");
 
+const game = {
+  running: false,
+  over: false,
+  score: 0,
+  best: 0,
+  lastTime: 0,
+  spawnTimer: 0,
+  fish: { x: 110, y: 310, r: 18, vy: 0, rot: 0 },
+  rocks: [],
+  bubbles: []
+};
 
-def render_grid(grid, player_pos, enemies, treasures, exit_pos):
-    emap = {
-        "#": "⬛",
-        ".": "⬜",
+function resetGame() {
+  game.running = false;
+  game.over = false;
+  game.score = 0;
+  game.spawnTimer = 0;
+  game.rocks = [];
+  game.bubbles = [];
+  game.fish.x = 110;
+  game.fish.y = 310;
+  game.fish.vy = 0;
+  game.fish.rot = 0;
+  scoreText.textContent = "0";
+  overlay.style.display = "block";
+  overlay.innerHTML = "Nhấn Space / Click để chơi";
+}
+
+function startGame() {
+  if (game.over) resetGame();
+  game.running = true;
+  game.over = false;
+  game.fish.vy = -8.5;
+  overlay.style.display = "none";
+}
+
+function endGame() {
+  game.running = false;
+  game.over = true;
+  game.best = Math.max(game.best, game.score);
+  overlay.style.display = "block";
+  overlay.innerHTML = "Game Over!<br>Điểm: " + game.score + "<br>Best: " + game.best + "<br><br>Nhấn Space / Click để chơi lại";
+}
+
+function flap() {
+  if (!game.running && !game.over) {
+    startGame();
+  } else if (game.running) {
+    game.fish.vy = -8.5;
+  } else {
+    resetGame();
+    startGame();
+  }
+}
+
+function addBubble() {
+  game.bubbles.push({
+    x: Math.random() * canvas.width,
+    y: canvas.height + 10,
+    r: 4 + Math.random() * 8,
+    speed: 0.8 + Math.random() * 1.4
+  });
+}
+
+function spawnRock() {
+  const gap = 170;
+  const minTop = 70;
+  const maxTop = canvas.height - 80 - gap - minTop;
+  const topHeight = minTop + Math.random() * maxTop;
+
+  game.rocks.push({
+    x: canvas.width + 20,
+    width: 72,
+    gap: gap,
+    topHeight: topHeight,
+    passed: false
+  });
+}
+
+function update(dt) {
+  if (!game.running) return;
+
+  game.fish.vy += 0.42 * dt * 0.06;
+  game.fish.y += game.fish.vy * dt * 0.06;
+  game.fish.rot = Math.max(-1.25, Math.min(1.5, game.fish.vy / 10));
+
+  game.spawnTimer += dt;
+  if (game.spawnTimer >= 1500) {
+    spawnRock();
+    game.spawnTimer = 0;
+  }
+
+  if (Math.random() < 0.08) addBubble();
+
+  for (let i = game.bubbles.length - 1; i >= 0; i--) {
+    const b = game.bubbles[i];
+    b.y -= b.speed * dt * 0.06;
+    b.x += Math.sin(b.y * 0.04) * 0.35;
+    if (b.y + b.r < 0) game.bubbles.splice(i, 1);
+  }
+
+  for (const rock of game.rocks) {
+    rock.x -= 2.3 * dt * 0.06;
+
+    if (!rock.passed && rock.x + rock.width < game.fish.x) {
+      rock.passed = true;
+      game.score += 1;
+      scoreText.textContent = game.score;
     }
-    px, py = player_pos
-    lines = []
-    for y, row in enumerate(grid):
-        line = ""
-        for x, cell in enumerate(row):
-            if (x, y) == (px, py):
-                line += "🧑‍🚀"
-            elif (x, y) in enemies:
-                line += "👾"
-            elif (x, y) in treasures:
-                line += "💎"
-            elif (x, y) == exit_pos:
-                line += "🚪"
-            else:
-                line += emap.get(cell, "⬜")
-        lines.append(line)
-    return "\n".join(lines)
 
+    const fishLeft = game.fish.x - game.fish.r;
+    const fishRight = game.fish.x + game.fish.r;
+    const fishTop = game.fish.y - game.fish.r;
+    const fishBottom = game.fish.y + game.fish.r;
 
-def init_game():
-    grid = make_empty_map(MAP_SIZE, WALL_PROB)
-    start = (0, 0)
-    grid[start[1]][start[0]] = "."
+    const rockLeft = rock.x;
+    const rockRight = rock.x + rock.width;
+    const topBottom = rock.topHeight;
+    const bottomTop = rock.topHeight + rock.gap;
 
-    exit_pos = place_item(grid, ".")
-    while exit_pos == start:
-        exit_pos = place_item(grid, ".")
+    const hitX = fishRight > rockLeft && fishLeft < rockRight;
+    const hitTop = fishTop < topBottom;
+    const hitBottom = fishBottom > bottomTop;
 
-    enemies = {}
-    for _ in range(NUM_ENEMIES):
-        pos = place_item(grid, ".")
-        enemies[pos] = {"hp": random.randint(3, 7)}
+    if (hitX && (hitTop || hitBottom)) {
+      endGame();
+    }
+  }
 
-    treasures = set()
-    for _ in range(NUM_TREASURES):
-        pos = place_item(grid, ".")
-        treasures.add(pos)
+  game.rocks = game.rocks.filter(r => r.x + r.width > -20);
 
-    st.session_state.grid = grid
-    st.session_state.player_pos = start
-    st.session_state.hp = 15
-    st.session_state.gold = 0
-    st.session_state.enemies = enemies
-    st.session_state.treasures = treasures
-    st.session_state.exit_pos = exit_pos
-    st.session_state.messages = ["Game bắt đầu! Tìm đường đến 🚪."]
-    st.session_state.turn = 0
-    st.session_state.game_over = False
-    st.session_state.game_won = False
+  if (game.fish.y - game.fish.r <= 0 || game.fish.y + game.fish.r >= canvas.height - 80) {
+    endGame();
+  }
+}
 
+function drawSeaweed(x, y, scale) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
 
-def move(dx, dy):
-    if st.session_state.get("game_over", False) or st.session_state.get("game_won", False):
-        st.session_state.messages.insert(0, "Trò chơi đã kết thúc. Nhấn 'Khởi động lại' để chơi lại.")
-        return
+  ctx.strokeStyle = "#18d38a";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
 
-    px, py = st.session_state.player_pos
-    nx, ny = px + dx, py + dy
-    size = len(st.session_state.grid)
+  for (let i = 0; i < 5; i++) {
+    const px = (i % 2 === 0 ? -8 : 8) * (1 + i * 0.25);
+    const py = -20 - i * 12;
+    ctx.quadraticCurveTo(px, py, 0, -30 - i * 14);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
 
-    if not (0 <= nx < size and 0 <= ny < size):
-        st.session_state.messages.insert(0, "Không thể đi qua biên giới.")
-        return
+function drawBackground() {
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, "#071f39");
+  grad.addColorStop(0.5, "#0d4f7f");
+  grad.addColorStop(1, "#0aa4c8");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if st.session_state.grid[ny][nx] == "#":
-        st.session_state.messages.insert(0, "Có tường chắn ở đó.")
-        return
+  ctx.strokeStyle = "rgba(255,255,255,0.09)";
+  ctx.lineWidth = 1;
+  for (let y = 30; y < canvas.height; y += 30) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.bezierCurveTo(canvas.width * 0.2, y - 12, canvas.width * 0.7, y + 12, canvas.width, y);
+    ctx.stroke();
+  }
 
-    target = (nx, ny)
+  for (let x = 0; x < canvas.width; x += 26) {
+    drawSeaweed(x, canvas.height - 80, 1 + (x % 3) * 0.32);
+  }
 
-    if target in st.session_state.enemies:
-        enemy = st.session_state.enemies[target]
-        player_attack = random.randint(1, 6)
-        enemy["hp"] -= player_attack
-        st.session_state.messages.insert(0, f"Bạn tấn công kẻ địch tại {target} gây {player_attack} sát thương.")
+  ctx.fillStyle = "#1d5e4d";
+  ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
 
-        if enemy["hp"] <= 0:
-            del st.session_state.enemies[target]
-            loot = random.randint(1, 5)
-            st.session_state.gold += loot
-            st.session_state.messages.insert(0, f"Bạn tiêu diệt kẻ địch! Nhặt được {loot} vàng.")
-            st.session_state.player_pos = target
-        else:
-            enemy_attack = random.randint(1, 4)
-            st.session_state.hp -= enemy_attack
-            st.session_state.messages.insert(0, f"Kẻ địch phản công gây {enemy_attack} sát thương. HP còn {st.session_state.hp}.")
-            if st.session_state.hp <= 0:
-                st.session_state.game_over = True
-                st.session_state.messages.insert(0, "Bạn đã chết. Game over.")
-    else:
-        st.session_state.player_pos = target
+  ctx.fillStyle = "#347d66";
+  for (let x = 0; x < canvas.width; x += 38) {
+    ctx.beginPath();
+    ctx.moveTo(x, canvas.height);
+    ctx.lineTo(x + 18, canvas.height - 80);
+    ctx.lineTo(x + 36, canvas.height);
+    ctx.closePath();
+    ctx.fill();
+  }
 
-        if target in st.session_state.treasures:
-            gained = random.randint(5, 15)
-            st.session_state.gold += gained
-            st.session_state.treasures.remove(target)
-            st.session_state.messages.insert(0, f"Bạn tìm thấy kho báu! +{gained} vàng.")
+  for (const b of game.bubbles) {
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
 
-        if target == st.session_state.exit_pos:
-            st.session_state.game_won = True
-            st.session_state.messages.insert(0, "Bạn đến cửa thoát! Bạn chiến thắng 🎉")
+function drawFish() {
+  const f = game.fish;
 
-    st.session_state.turn += 1
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  ctx.rotate(f.rot);
 
+  // bóng dưới cá
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
+  ctx.beginPath();
+  ctx.ellipse(0, 18, 26, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-# --- Page start ---
-st.title("Mini Dungeon trên Streamlit")
+  // thân chính
+  ctx.fillStyle = "#4ec0d8";
+  ctx.beginPath();
+  ctx.moveTo(-26, 0);
+  ctx.quadraticCurveTo(-18, -18, 8, -18);
+  ctx.quadraticCurveTo(26, -15, 32, 0);
+  ctx.quadraticCurveTo(26, 17, 8, 18);
+  ctx.quadraticCurveTo(-18, 18, -26, 0);
+  ctx.closePath();
+  ctx.fill();
 
-if "grid" not in st.session_state:
-    init_game()
+  // sáng trên thân
+  ctx.fillStyle = "rgba(255,255,255,0.28)";
+  ctx.beginPath();
+  ctx.ellipse(-4, -2, 15, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-# Top info
-col1, col2, col3 = st.columns([2, 1, 1])
-with col1:
-    st.subheader("Trạng thái")
-    st.write(f"HP: **{st.session_state.hp}**")
-    st.write(f"Vàng: **{st.session_state.gold}**")
-    st.write(f"Lượt: **{st.session_state.turn}**")
-with col2:
-    st.subheader("Quái vật")
-    st.write(len(st.session_state.enemies))
-with col3:
-    st.subheader("Kho báu")
-    st.write(len(st.session_state.treasures))
+  // đốm đen lớn
+  ctx.fillStyle = "#1a2d3a";
+  ctx.beginPath();
+  ctx.ellipse(-2, 0, 9, 11, 0.2, 0, Math.PI * 2);
+  ctx.fill();
 
-# Map
-st.subheader("Bản đồ")
-st.code(
-    render_grid(
-        st.session_state.grid,
-        st.session_state.player_pos,
-        st.session_state.enemies,
-        st.session_state.treasures,
-        st.session_state.exit_pos,
-    ),
-    language="text",
-)
+  // sọc đen dài
+  ctx.strokeStyle = "#1b2d3a";
+  ctx.lineWidth = 2;
+  for (let i = -18; i <= 18; i += 7) {
+    ctx.beginPath();
+    ctx.moveTo(i - 3, -8);
+    ctx.quadraticCurveTo(i + 8, 0, i, 11);
+    ctx.stroke();
+  }
 
-# Controls
-st.subheader("Di chuyển")
-c1, c2, c3 = st.columns([1, 2, 1])
-with c1:
-    if st.button("⬆️"):
-        move(0, -1)
-with c2:
-    left, right = st.columns(2)
-    with left:
-        if st.button("⬅️"):
-            move(-1, 0)
-    with right:
-        if st.button("➡️"):
-            move(1, 0)
-with c3:
-    if st.button("⬇️"):
-        move(0, 1)
+  // đốm nhỏ
+  ctx.fillStyle = "#1a2430";
+  ctx.beginPath();
+  ctx.ellipse(14, 3, 6, 8, 0.1, 0, Math.PI * 2);
+  ctx.fill();
 
-# Actions
-if st.button("Chờ (skip)"):
-    if not st.session_state.get("game_over", False) and not st.session_state.get("game_won", False):
-        st.session_state.messages.insert(0, "Bạn chờ một lượt...")
-        st.session_state.turn += 1
+  ctx.fillStyle = "#1a2430";
+  ctx.beginPath();
+  ctx.ellipse(4, -8, 5, 7, 0.1, 0, Math.PI * 2);
+  ctx.fill();
 
-if st.button("Khởi động lại"):
-    init_game()
-    st.rerun()
+  // đuôi
+  ctx.fillStyle = "#f56d4d";
+  ctx.beginPath();
+  ctx.moveTo(-30, 0);
+  ctx.lineTo(-52, -18);
+  ctx.lineTo(-52, 0);
+  ctx.lineTo(-52, 18);
+  ctx.closePath();
+  ctx.fill();
 
-# Messages (recent)
-st.subheader("Thông báo")
-for m in st.session_state.messages[:10]:
-    st.write("- " + m)
+  // đuôi phụ
+  ctx.fillStyle = "#ff8f67";
+  ctx.beginPath();
+  ctx.moveTo(-28, 0);
+  ctx.lineTo(-46, -9);
+  ctx.lineTo(-46, 9);
+  ctx.closePath();
+  ctx.fill();
 
-# Check player death or win and show restart suggestion
-if st.session_state.get("game_over", False):
-    st.error("Bạn đã chết — nhấn 'Khởi động lại' để chơi lại.")
-elif st.session_state.get("game_won", False):
-    st.success("Bạn đã thoát khỏi hầm ngục! Chúc mừng 🎉")
+  // vây lưng
+  ctx.fillStyle = "#f7b152";
+  ctx.beginPath();
+  ctx.moveTo(0, -12);
+  ctx.lineTo(16, -27);
+  ctx.lineTo(18, -10);
+  ctx.closePath();
+  ctx.fill();
+
+  // vây bụng
+  ctx.fillStyle = "#f4805d";
+  ctx.beginPath();
+  ctx.moveTo(3, 11);
+  ctx.lineTo(18, 27);
+  ctx.lineTo(17, 9);
+  ctx.closePath();
+  ctx.fill();
+
+  // vây ngực
+  ctx.fillStyle = "#ff9d67";
+  ctx.beginPath();
+  ctx.moveTo(6, 4);
+  ctx.lineTo(18, 14);
+  ctx.lineTo(12, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // mắt
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.arc(15, -5, 6.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#111";
+  ctx.beginPath();
+  ctx.arc(17, -5, 2.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // sáng mắt
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.beginPath();
+  ctx.arc(13, -7, 1.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // miệng
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(22, 0);
+  ctx.lineTo(30, 4);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawRock(rock) {
+  const x = rock.x;
+  const width = rock.width;
+  const topHeight = rock.topHeight;
+  const gap = rock.gap;
+
+  ctx.fillStyle = "#7a8d8d";
+  ctx.beginPath();
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x + width, 0);
+  ctx.lineTo(x + width + 8, topHeight - 18);
+  ctx.lineTo(x + width * 0.6, topHeight + 10);
+  ctx.lineTo(x + width * 0.3, topHeight - 6);
+  ctx.lineTo(x - 4, topHeight - 10);
+  ctx.closePath();
+  ctx.fill();
+
+  const bottomY = topHeight + gap;
+  ctx.fillStyle = "#7a8d8d";
+  ctx.beginPath();
+  ctx.moveTo(x, canvas.height - 80);
+  ctx.lineTo(x + width, canvas.height - 80);
+  ctx.lineTo(x + width + 10, bottomY + 18);
+  ctx.lineTo(x + width * 0.7, bottomY + 6);
+  ctx.lineTo(x + width * 0.4, bottomY + 8);
+  ctx.lineTo(x - 4, bottomY + 18);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function render() {
+  drawBackground();
+  for (const rock of game.rocks) drawRock(rock);
+  drawFish();
+}
+
+function loop(ts) {
+  const dt = ts - (game.lastTime || ts);
+  game.lastTime = ts;
+
+  update(dt);
+  render();
+
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    e.preventDefault();
+    flap();
+  }
+});
+
+canvas.addEventListener("pointerdown", () => flap());
+
+resetGame();
+requestAnimationFrame(loop);
+</script>
+"""
+
+components.html(html, height=700, width=500)
