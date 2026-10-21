@@ -316,7 +316,6 @@ function renderShop() {
         }
         return;
       }
-
       state.selectedFish = fish.id;
       saveProgress();
       renderShop();
@@ -386,10 +385,10 @@ function getSceneTheme() {
       foam: "#dfeefc"
     },
     {
-      sky1: "#0b2b45",
-      sky2: "#167f9c",
-      deep: "#0d435a",
-      ground: "#0e5f4c",
+      sky1: "#0d2d42",
+      sky2: "#177f9f",
+      deep: "#0c4d64",
+      ground: "#0d715b",
       accent: "#ffd27a",
       glow: "#fff6c8",
       coral: "#ff7a9b",
@@ -414,7 +413,7 @@ function createBackgroundLife() {
   game.tinyFish = [];
   game.coral = [];
 
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < 24; i++) {
     game.seaweeds.push({
       x: Math.random() * canvas.width,
       y: canvas.height - 82 + Math.random() * 20,
@@ -435,15 +434,15 @@ function createBackgroundLife() {
     });
   }
 
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 16; i++) {
     game.tinyFish.push({
       x: Math.random() * canvas.width,
-      y: 50 + Math.random() * (canvas.height - 150),
+      y: 50 + Math.random() * (canvas.height - 180),
       size: 5 + Math.random() * 9,
       speed: 0.3 + Math.random() * 0.8,
       dir: Math.random() > 0.5 ? 1 : -1,
       phase: Math.random() * Math.PI * 2,
-      color: ["#ffe77c", "#ffd166", "#9ef2ff", "#9cf7b7", "#ffc0cb", "#ffd2a8", "#dcb8ff"][i % 7]
+      color: ["#ffe77c", "#ffd166", "#9ef2ff", "#9cf7b7", "#ffc0cb", "#ffd2a8", "#dcb8ff", "#ff8cc6", "#7ae7d2"][i % 9]
     });
   }
 }
@@ -621,7 +620,7 @@ function drawBackground() {
       ctx.translate(f.x, f.y);
       ctx.fillStyle = "#dfefff";
       ctx.shadowColor = "#8fd1ff";
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.ellipse(0, 0, f.size + 2, f.size * 0.7, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -633,7 +632,6 @@ function drawBackground() {
     for (const c of game.coral) {
       ctx.save();
       ctx.translate(c.x, c.baseY);
-
       ctx.fillStyle = c.color;
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -659,7 +657,7 @@ function drawBackground() {
 
       ctx.fillStyle = f.color;
       ctx.shadowColor = f.color;
-      ctx.shadowBlur = 9;
+      ctx.shadowBlur = 10;
 
       ctx.beginPath();
       ctx.ellipse(0, 0, f.size + 4, f.size * 0.8, 0, 0, Math.PI * 2);
@@ -667,8 +665,29 @@ function drawBackground() {
 
       ctx.fillStyle = "rgba(255,255,255,0.85)";
       ctx.beginPath();
-      ctx.arc(f.size * 0.6, -1, 1.2, 0, Math.PI * 2);
+      ctx.arc(f.size * 0.7, -1, 1.2, 0, Math.PI * 2);
       ctx.fill();
+
+      ctx.restore();
+    }
+
+    for (const s of game.seaweeds) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      const sway = Math.sin(s.sway) * 10;
+      ctx.strokeStyle = "#67e6b5";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+
+      let px = 0;
+      let py = 0;
+      for (let i = 1; i <= 6; i++) {
+        px = (i % 2 === 0 ? -1 : 1) * (6 + i * 2) + sway * 0.2;
+        py = -s.h * (i / 7);
+        ctx.quadraticCurveTo(px, py, 0, -s.h * (i / 6));
+      }
+      ctx.stroke();
       ctx.restore();
     }
   }
@@ -677,7 +696,6 @@ function drawBackground() {
     for (const s of game.seaweeds) {
       ctx.save();
       ctx.translate(s.x, s.y);
-
       const sway = Math.sin(s.sway) * 10;
       ctx.strokeStyle = s.color;
       ctx.lineWidth = 3;
@@ -691,7 +709,6 @@ function drawBackground() {
         py = -s.h * (i / 7);
         ctx.quadraticCurveTo(px, py, 0, -s.h * (i / 6));
       }
-
       ctx.stroke();
       ctx.restore();
     }
