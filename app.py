@@ -289,5 +289,119 @@ function drawFish() {
   ctx.fillStyle = "#ff8d6a";
   ctx.beginPath();
   ctx.moveTo(-28, 0);
-  ctx.line*
-
+  ctx.lineTo(-46, -9);
+  ctx.lineTo(-46, 9);
+  ctx.closePath();
+  ctx.fill();
+
+  // vây lưng
+  ctx.fillStyle = "#f7b24d";
+  ctx.beginPath();
+  ctx.moveTo(-2, -12);
+  ctx.lineTo(16, -28);
+  ctx.lineTo(18, -8);
+  ctx.closePath();
+  ctx.fill();
+
+  // vây bụng
+  ctx.fillStyle = "#f86b4c";
+  ctx.beginPath();
+  ctx.moveTo(4, 10);
+  ctx.lineTo(18, 28);
+  ctx.lineTo(16, 8);
+  ctx.closePath();
+  ctx.fill();
+
+  // vây ngực
+  ctx.fillStyle = "#ff9e63";
+  ctx.beginPath();
+  ctx.moveTo(4, 4);
+  ctx.lineTo(18, 14);
+  ctx.lineTo(12, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // mắt
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(12, -5, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#111111";
+  ctx.beginPath();
+  ctx.arc(14, -5, 2.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // miệng
+  ctx.strokeStyle = "#111111";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(20, 0);
+  ctx.lineTo(28, 4);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawRock(rock) {
+  const x = rock.x;
+  const width = rock.width;
+  const topHeight = rock.topHeight;
+  const gap = rock.gap;
+
+  ctx.fillStyle = "#7a8d8d";
+  ctx.beginPath();
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x + width, 0);
+  ctx.lineTo(x + width + 8, topHeight - 18);
+  ctx.lineTo(x + width * 0.6, topHeight + 10);
+  ctx.lineTo(x + width * 0.3, topHeight - 6);
+  ctx.lineTo(x - 4, topHeight - 10);
+  ctx.closePath();
+  ctx.fill();
+
+  const bottomY = topHeight + gap;
+  ctx.fillStyle = "#7a8d8d";
+  ctx.beginPath();
+  ctx.moveTo(x, canvas.height - 80);
+  ctx.lineTo(x + width, canvas.height - 80);
+  ctx.lineTo(x + width + 10, bottomY + 18);
+  ctx.lineTo(x + width * 0.7, bottomY + 6);
+  ctx.lineTo(x + width * 0.4, bottomY + 8);
+  ctx.lineTo(x - 4, bottomY + 18);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function render() {
+  drawBackground();
+
+  for (const rock of game.rocks) drawRock(rock);
+  drawFish();
+}
+
+function loop(ts) {
+  const dt = ts - (game.lastTime || ts);
+  game.lastTime = ts;
+
+  update(dt);
+  render();
+
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    e.preventDefault();
+    flap();
+  }
+});
+
+canvas.addEventListener("pointerdown", () => flap());
+
+resetGame();
+requestAnimationFrame(loop);
+</script>
+"""
+
+components.html(html, height=700, width=500)
