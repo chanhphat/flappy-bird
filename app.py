@@ -129,5 +129,65 @@ html = """
     height: 28px;
     border-radius: 50%;
     position: relative;
-    background*
+    background: var(--fish-color);
+  }
+  .fish-mini::before {
+    content: "";
+    position: absolute;
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    background: var(--fish-color);
+    clip-path: polygon(0 50%, 100% 0, 100% 100%);
+  }
+  .fish-mini::after {
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 8px;
+    width: 5px;
+    height: 5px;
+    background: #111;
+    border-radius: 50%;
+  }
+  .fish-name { font-weight: bold; }
+  .fish-meta { font-size: 12px; opacity: 0.8; }
+  .shop-action {
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .shop-action.buy {
+    background: linear-gradient(#ffe785, #ffbf47);
+    color: #4a2b00;
+  }
+  .shop-action.use {
+    background: linear-gradient(#94f7c9, #46d89e);
+    color: #0d3d2e;
+  }
+  .small-text { font-size: 12px; opacity: 0.8; }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+</style>
+
+<div id="game-shell">
+  <div id="scoreText">0</div>
+  <canvas id="gameCanvas" width="430" height="620"></canvas>
+
+  <div id="startScreen" class="panel">
+    <div class="panel-box">
+      <div class="title">Fishy Dive</div>
+      <div class="subtitle">Chơi để kiếm điểm, mua cá mới và đổi skin</div>
+      <div class="score-badge">Điểm của bạn: <span id="homePoints">0</span></div>
+      <div class="button-row">
+        <button id="startBtn" class="primary">Chơi</button>
+        <*
 
