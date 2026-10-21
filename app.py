@@ -3,75 +3,229 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Fishy Dive", page_icon="🐠", layout="centered")
 st.title("Fishy Dive")
-st.caption("Nhấn Space hoặc click chuột để bơi")
+st.caption("Chơi, kiếm điểm, mở khóa skin cá mới")
 
-html = """
+html = '''
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; }
-  #game-wrap {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 12px;
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #061f39;
   }
-  #game {
-    position: relative;
+  #game-shell {
     width: 430px;
     height: 620px;
+    margin: 16px auto;
+    position: relative;
     border: 4px solid #123d5d;
     border-radius: 14px;
     overflow: hidden;
+    box-shadow: 0 12px 25px rgba(0,0,0,0.25);
     background: linear-gradient(#061f39, #0d4f7f 50%, #0aa4c8);
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
   }
   canvas {
     display: block;
     width: 100%;
     height: 100%;
   }
-  #overlay {
+  .panel {
     position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.35);
-    color: white;
-    padding: 18px 22px;
-    border-radius: 12px;
-    text-align: center;
-    font-size: 21px;
-    line-height: 1.5;
-    min-width: 220px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(4, 16, 30, 0.6);
+    backdrop-filter: blur(3px);
   }
-  .hud {
-    position: absolute;
-    top: 10px;
-    left: 0;
-    width: 100%;
-    text-align: center;
+  .panel.hidden {
+    display: none;
+  }
+  .panel-box {
+    width: 82%;
+    background: rgba(18, 38, 60, 0.9);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 16px;
+    padding: 24px 20px;
     color: white;
-    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  }
+  .title {
     font-size: 34px;
-    text-shadow: 2px 2px 0 #000;
-    pointer-events: none;
+    font-weight: bold;
+    margin-bottom: 12px;
+  }
+  .subtitle {
+    font-size: 15px;
+    opacity: 0.9;
+    margin-bottom: 18px;
+  }
+  .score-badge {
+    margin-bottom: 18px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #dff7ff;
+  }
+  .button-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  button {
+    border: none;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  button:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+  }
+  .primary {
+    background: linear-gradient(#5ad0ff, #2aa6df);
+    color: #03283d;
+  }
+  .secondary {
+    background: linear-gradient(#ffcd67, #f7a33a);
+    color: #4d2a00;
+  }
+  .shop-list {
+    display: grid;
+    gap: 12px;
+    max-height: 340px;
+    overflow-y: auto;
+    margin-top: 12px;
+  }
+  .fish-card {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 8px 10px;
+    text-align: left;
+  }
+  .fish-mini {
+    width: 52px;
+    height: 28px;
+    border-radius: 50%;
+    position: relative;
+    background: var(--fish-color);
+  }
+  .fish-mini::before {
+    content: "";
+    position: absolute;
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    background: var(--fish-color);
+    clip-path: polygon(0 50%, 100% 0, 100% 100%);
+  }
+  .fish-mini::after {
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 8px;
+    width: 5px;
+    height: 5px;
+    background: #111;
+    border-radius: 50%;
+  }
+  .fish-name {
+    font-weight: bold;
+  }
+  .fish-meta {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+  .shop-action {
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .shop-action.buy {
+    background: linear-gradient(#ffe785, #ffbf47);
+    color: #4a2b00;
+  }
+  .shop-action.use {
+    background: linear-gradient(#94f7c9, #46d89e);
+    color: #0d3d2e;
+  }
+  .small-text {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
   }
 </style>
 
-<div id="game-wrap">
-  <div id="game">
-    <div class="hud" id="scoreText">0</div>
-    <canvas id="gameCanvas" width="430" height="620"></canvas>
-    <div id="overlay">Nhấn Space / Click để chơi</div>
+<div id="game-shell">
+  <canvas id="gameCanvas" width="430" height="620"></canvas>
+
+  <div id="startPanel" class="panel">
+    <div class="panel-box">
+      <div class="title">Fishy Dive</div>
+      <div class="subtitle">Chơi để kiếm điểm, mua cá mới và đổi skin</div>
+      <div class="score-badge">Điểm của bạn: <span id="homePoints">0</span></div>
+      <div class="button-row">
+        <button id="startBtn" class="primary">Chơi</button>
+        <button id="shopBtn" class="secondary">Cửa hàng</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shopPanel" class="panel hidden">
+    <div class="panel-box">
+      <div class="title" style="font-size:28px;">Cửa hàng cá</div>
+      <div class="row">
+        <div class="small-text">Điểm hiện có</div>
+        <div class="small-text" id="shopPoints">0</div>
+      </div>
+      <div id="shopList" class="shop-list"></div>
+      <div class="button-row" style="margin-top:16px;">
+        <button id="backToMenu" class="secondary">Quay lại</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameOverPanel" class="panel hidden">
+    <div class="panel-box">
+      <div class="title" style="font-size:28px;">Game Over</div>
+      <div class="subtitle" id="gameOverSummary">Bạn đã kiếm được 0 điểm</div>
+      <div class="button-row">
+        <button id="playAgainBtn" class="primary">Chơi lại</button>
+        <button id="shopFromGameBtn" class="secondary">Cửa hàng</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-const overlay = document.getElementById("overlay");
+const startPanel = document.getElementById("startPanel");
+const shopPanel = document.getElementById("shopPanel");
+const gameOverPanel = document.getElementById("gameOverPanel");
 const scoreText = document.getElementById("scoreText");
+const homePoints = document.getElementById("homePoints");
+const shopPoints = document.getElementById("shopPoints");
+const shopList = document.getElementById("shopList");
+const gameOverSummary = document.getElementById("gameOverSummary");
 
 const themes = [
   {
@@ -127,6 +281,123 @@ const themes = [
     tinyFish: "rgba(176,255,160,0.7)"
   }
 ];
+
+const fishCatalog = [
+  { id: "classic", name: "Cá xanh", price: 0, body: "#4ec0d8", fin: "#f7b152", accent: "#f4805d", shadow: "#1a2d3a" },
+  { id: "coral", name: "Cá san hô", price: 12, body: "#ff8e5d", fin: "#ffd166", accent: "#ff6b6b", shadow: "#7a3a2c" },
+  { id: "moon", name: "Cá trăng", price: 20, body: "#c4c7ff", fin: "#a7d8ff", accent: "#f7d6e0", shadow: "#3d4a8d" },
+  { id: "forest", name: "Cá rừng", price: 28, body: "#59d38a", fin: "#a4efb7", accent: "#fbdc7a", shadow: "#215a42" },
+  { id: "royal", name: "Cá hoàng gia", price: 40, body: "#d7b3ff", fin: "#ffd86b", accent: "#f39bff", shadow: "#563c79" },
+  { id: "neon", name: "Cá neon", price: 35, body: "#45f0d5", fin: "#ffeb66", accent: "#ff7eea", shadow: "#1f5e6a" }
+];
+
+const storage = {
+  keyPoints: "fishy_points",
+  keyUnlocked: "fishy_unlocked",
+  keySelected: "fishy_selected"
+};
+
+const state = {
+  points: Number(localStorage.getItem(storage.keyPoints) || 0),
+  unlocked: JSON.parse(localStorage.getItem(storage.keyUnlocked) || '["classic"]'),
+  selectedFish: localStorage.getItem(storage.keySelected) || "classic",
+  screen: "start"
+};
+
+function saveProgress() {
+  localStorage.setItem(storage.keyPoints, String(state.points));
+  localStorage.setItem(storage.keyUnlocked, JSON.stringify(state.unlocked));
+  localStorage.setItem(storage.keySelected, state.selectedFish);
+}
+
+function getSelectedFish() {
+  return fishCatalog.find(f => f.id === state.selectedFish) || fishCatalog[0];
+}
+
+function updatePointDisplays() {
+  homePoints.textContent = state.points;
+  shopPoints.textContent = state.points;
+}
+
+function showScreen(name) {
+  state.screen = name;
+  startPanel.classList.toggle("hidden", name !== "start");
+  shopPanel.classList.toggle("hidden", name !== "shop");
+  gameOverPanel.classList.toggle("hidden", name !== "gameover");
+  updatePointDisplays();
+}
+
+function renderShop() {
+  shopList.innerHTML = "";
+  for (const fish of fishCatalog) {
+    const unlocked = state.unlocked.includes(fish.id);
+    const selected = state.selectedFish === fish.id;
+
+    const card = document.createElement("div");
+    card.className = "fish-card";
+    card.style.setProperty("--fish-color", fish.body);
+
+    const fishView = document.createElement("div");
+    fishView.className = "fish-mini";
+    fishView.style.setProperty("--fish-color", fish.body);
+
+    const textBlock = document.createElement("div");
+    textBlock.innerHTML = `
+      <div class="fish-name">${fish.name}</div>
+      <div class="fish-meta">${unlocked ? (selected ? "Đang sử dụng" : "Đã mua") : `${fish.price} điểm`}</div>
+    `;
+
+    const actionBtn = document.createElement("button");
+    actionBtn.className = "shop-action " + (unlocked ? "use" : "buy");
+    actionBtn.textContent = unlocked ? (selected ? "Đang dùng" : "Dùng") : "Mua";
+
+    actionBtn.addEventListener("click", () => {
+      if (!unlocked) {
+        if (state.points >= fish.price) {
+          state.points -= fish.price;
+          state.unlocked.push(fish.id);
+          saveProgress();
+          renderShop();
+          updatePointDisplays();
+        }
+        return;
+      }
+
+      state.selectedFish = fish.id;
+      saveProgress();
+      renderShop();
+    });
+
+    card.appendChild(fishView);
+    card.appendChild(textBlock);
+    card.appendChild(actionBtn);
+    shopList.appendChild(card);
+  }
+}
+
+document.getElementById("startBtn").addEventListener("click", () => {
+  showScreen("game");
+  startGame();
+});
+
+document.getElementById("shopBtn").addEventListener("click", () => {
+  renderShop();
+  showScreen("shop");
+});
+
+document.getElementById("backToMenu").addEventListener("click", () => {
+  showScreen("start");
+});
+
+document.getElementById("shopFromGameBtn").addEventListener("click", () => {
+  renderShop();
+  showScreen("shop");
+});
+
+document.getElementById("playAgainBtn").addEventListener("click", () => {
+  showScreen("game");
+  startGame();
+});
 
 function hexToRgb(hex) {
   const clean = hex.replace("#", "");
@@ -224,13 +495,10 @@ function nextTheme() {
   game.transition = 1;
 }
 
-function addBubble() {
-  game.bubbles.push({
-    x: Math.random() * canvas.width,
-    y: canvas.height + 10,
-    r: 4 + Math.random() * 8,
-    speed: 0.8 + Math.random() * 1.4
-  });
+function startGame() {
+  resetGame();
+  game.running = true;
+  game.over = false;
 }
 
 function resetGame() {
@@ -249,34 +517,31 @@ function resetGame() {
   game.fish.vy = 0;
   game.fish.rot = 0;
   scoreText.textContent = "0";
-  overlay.style.display = "block";
-  overlay.innerHTML = "Nhấn Space / Click để chơi";
-}
-
-function startGame() {
-  if (game.over) resetGame();
-  game.running = true;
-  game.over = false;
-  game.fish.vy = -8.5;
-  overlay.style.display = "none";
 }
 
 function endGame() {
   game.running = false;
   game.over = true;
-  game.best = Math.max(game.best, game.score);
-  overlay.style.display = "block";
-  overlay.innerHTML = "Game Over!<br>Điểm: " + game.score + "<br>Best: " + game.best + "<br><br>Nhấn Space / Click để chơi lại";
+  state.points += game.score;
+  saveProgress();
+
+  gameOverSummary.textContent = "Bạn đã kiếm được " + game.score + " điểm";
+  updatePointDisplays();
+  showScreen("gameover");
 }
 
 function flap() {
+  if (state.screen !== "game") return;
+
   if (!game.running && !game.over) {
-    startGame();
-  } else if (game.running) {
+    game.running = true;
+    game.over = false;
     game.fish.vy = -8.5;
-  } else {
-    resetGame();
-    startGame();
+    return;
+  }
+
+  if (game.running) {
+    game.fish.vy = -8.5;
   }
 }
 
@@ -301,7 +566,7 @@ function spawnRock() {
 }
 
 function update(dt) {
-  if (!game.running) return;
+  if (!game.running || state.screen !== "game") return;
 
   if (game.transition > 0) {
     game.transition = Math.max(0, game.transition - 0.02);
@@ -320,7 +585,14 @@ function update(dt) {
     game.spawnTimer = 0;
   }
 
-  if (Math.random() < 0.08) addBubble();
+  if (Math.random() < 0.08) {
+    game.bubbles.push({
+      x: Math.random() * canvas.width,
+      y: canvas.height + 10,
+      r: 4 + Math.random() * 8,
+      speed: 0.8 + Math.random() * 1.4
+    });
+  }
 
   for (let i = game.bubbles.length - 1; i >= 0; i--) {
     const b = game.bubbles[i];
@@ -334,7 +606,7 @@ function update(dt) {
 
     if (!rock.passed && rock.x + rock.width < game.fish.x) {
       rock.passed = true;
-      game.score += 1;
+      game.score += 10;
       scoreText.textContent = game.score;
     }
 
@@ -464,6 +736,7 @@ function drawBackground() {
 }
 
 function drawFish() {
+  const selected = getSelectedFish();
   const f = game.fish;
 
   ctx.save();
@@ -475,7 +748,7 @@ function drawFish() {
   ctx.ellipse(0, 18, 28, 11, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#4ec0d8";
+  ctx.fillStyle = selected.body;
   ctx.beginPath();
   ctx.ellipse(0, 0, 34, 16, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -485,12 +758,12 @@ function drawFish() {
   ctx.ellipse(-6, -2, 18, 8, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#1a2d3a";
+  ctx.fillStyle = selected.shadow;
   ctx.beginPath();
   ctx.ellipse(-2, 0, 10, 12, 0.1, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "#1b2d3a";
+  ctx.strokeStyle = selected.shadow;
   ctx.lineWidth = 2;
   for (let i = -18; i <= 18; i += 7) {
     ctx.beginPath();
@@ -499,12 +772,12 @@ function drawFish() {
     ctx.stroke();
   }
 
-  ctx.fillStyle = "#1a2430";
+  ctx.fillStyle = selected.shadow;
   ctx.beginPath();
   ctx.ellipse(12, 2, 6, 8, 0.1, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#f7b152";
+  ctx.fillStyle = selected.fin;
   ctx.beginPath();
   ctx.moveTo(-4, -12);
   ctx.lineTo(18, -34);
@@ -512,7 +785,7 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#f4805d";
+  ctx.fillStyle = selected.accent;
   ctx.beginPath();
   ctx.moveTo(2, 12);
   ctx.lineTo(20, 34);
@@ -520,7 +793,7 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#f9c76d";
+  ctx.fillStyle = selected.fin;
   ctx.beginPath();
   ctx.moveTo(-3, -10);
   ctx.lineTo(-18, -30);
@@ -528,7 +801,7 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#ff9b64";
+  ctx.fillStyle = selected.accent;
   ctx.beginPath();
   ctx.moveTo(3, 10);
   ctx.lineTo(-18, 30);
@@ -536,7 +809,7 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#f56d4d";
+  ctx.fillStyle = selected.accent;
   ctx.beginPath();
   ctx.moveTo(-30, 0);
   ctx.lineTo(-56, -18);
@@ -545,7 +818,7 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#ff8f67";
+  ctx.fillStyle = selected.fin;
   ctx.beginPath();
   ctx.moveTo(-27, 0);
   ctx.lineTo(-46, -9);
@@ -637,12 +910,19 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-canvas.addEventListener("pointerdown", () => flap());
+canvas.addEventListener("pointerdown", () => {
+  if (state.screen === "game") {
+    flap();
+  }
+});
 
 createBackgroundLife();
+renderShop();
+updatePointDisplays();
+showScreen("start");
 resetGame();
 requestAnimationFrame(loop);
 </script>
-"""
+'''
 
 components.html(html, height=700, width=500)
