@@ -275,5 +275,96 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  // V*
-
+  // Vây bụng
+  ctx.fillStyle = "#ff8f5b";
+  ctx.beginPath();
+  ctx.moveTo(2, 10);
+  ctx.lineTo(18, 28);
+  ctx.lineTo(16, 8);
+  ctx.closePath();
+  ctx.fill();
+
+  // Mắt
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.arc(10, -5, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#111";
+  ctx.beginPath();
+  ctx.arc(12, -5, 2.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Miệng
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(18, 0);
+  ctx.lineTo(27, 4);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawRock(rock) {
+  const x = rock.x;
+  const width = rock.width;
+  const topHeight = rock.topHeight;
+  const gap = rock.gap;
+
+  ctx.fillStyle = "#7a8d8d";
+  ctx.beginPath();
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x + width, 0);
+  ctx.lineTo(x + width + 8, topHeight - 18);
+  ctx.lineTo(x + width * 0.6, topHeight + 10);
+  ctx.lineTo(x + width * 0.3, topHeight - 6);
+  ctx.lineTo(x - 4, topHeight - 10);
+  ctx.closePath();
+  ctx.fill();
+
+  const bottomY = topHeight + gap;
+  ctx.fillStyle = "#7a8d8d";
+  ctx.beginPath();
+  ctx.moveTo(x, canvas.height - 80);
+  ctx.lineTo(x + width, canvas.height - 80);
+  ctx.lineTo(x + width + 10, bottomY + 18);
+  ctx.lineTo(x + width * 0.7, bottomY + 6);
+  ctx.lineTo(x + width * 0.4, bottomY + 8);
+  ctx.lineTo(x - 4, bottomY + 18);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function render() {
+  drawBackground();
+
+  for (const rock of game.rocks) drawRock(rock);
+  drawFish();
+}
+
+function loop(ts) {
+  const dt = ts - (game.lastTime || ts);
+  game.lastTime = ts;
+
+  update(dt);
+  render();
+
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") {
+    e.preventDefault();
+    flap();
+  }
+});
+
+canvas.addEventListener("pointerdown", () => flap());
+
+resetGame();
+requestAnimationFrame(loop);
+</script>
+"""
+
+components.html(html, height=700, width=500)
