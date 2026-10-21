@@ -5,7 +5,7 @@ st.set_page_config(page_title="Fishy Dive", page_icon="🐠", layout="centered")
 st.title("Fishy Dive")
 st.caption("Nhấn Space hoặc click chuột để bơi")
 
-html = '''
+html = """
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; }
@@ -23,7 +23,7 @@ html = '''
     border-radius: 14px;
     overflow: hidden;
     background: linear-gradient(#061f39, #0d4f7f 50%, #0aa4c8);
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.25);
   }
   canvas {
     display: block;
@@ -35,7 +35,7 @@ html = '''
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0,0,0,0.35);
     color: white;
     padding: 18px 22px;
     border-radius: 12px;
@@ -43,7 +43,7 @@ html = '''
     font-size: 21px;
     line-height: 1.5;
     min-width: 220px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
   }
   .hud {
     position: absolute;
@@ -133,9 +133,9 @@ function resetGame() {
   game.fish.y = 310;
   game.fish.vy = 0;
   game.fish.rot = 0;
-  scoreText.textContent = "0";
-  overlay.style.display = "block";
-  overlay.innerHTML = "Nhấn Space / Click để chơi";
+  scoreText.textContent = '0';
+  overlay.style.display = 'block';
+  overlay.innerHTML = 'Nhấn Space / Click để chơi';
 }
 
 function startGame() {
@@ -143,15 +143,15 @@ function startGame() {
   game.running = true;
   game.over = false;
   game.fish.vy = -8.5;
-  overlay.style.display = "none";
+  overlay.style.display = 'none';
 }
 
 function endGame() {
   game.running = false;
   game.over = true;
   game.best = Math.max(game.best, game.score);
-  overlay.style.display = "block";
-  overlay.innerHTML = "Game Over!<br>Điểm: " + game.score + "<br>Best: " + game.best + "<br><br>Nhấn Space / Click để chơi lại";
+  overlay.style.display = 'block';
+  overlay.innerHTML = 'Game Over!<br>Điểm: ' + game.score + '<br>Best: ' + game.best + '<br><br>Nhấn Space / Click để chơi lại';
 }
 
 function flap() {
@@ -250,13 +250,13 @@ function update(dt) {
 
 function drawBackground() {
   const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  grad.addColorStop(0, "#071f39");
-  grad.addColorStop(0.45, "#0d4f7f");
-  grad.addColorStop(1, "#0aa4c8");
+  grad.addColorStop(0, '#071f39');
+  grad.addColorStop(0.45, '#0d4f7f');
+  grad.addColorStop(1, '#0aa4c8');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.strokeStyle = "rgba(255,255,255,0.09)";
+  ctx.strokeStyle = 'rgba(255,255,255,0.09)';
   ctx.lineWidth = 1;
   for (let y = 30; y < canvas.height; y += 30) {
     ctx.beginPath();
@@ -270,17 +270,17 @@ function drawBackground() {
     ctx.translate(f.x, f.y);
     ctx.scale(f.dir, 1);
 
-    ctx.fillStyle = "rgba(120, 220, 255, 0.7)";
+    ctx.fillStyle = 'rgba(120, 220, 255, 0.7)';
     ctx.beginPath();
     ctx.ellipse(0, 0, f.size, f.size * 0.52, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.beginPath();
     ctx.arc(f.size * 0.3, -1, f.size * 0.15, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#ff7a5c";
+    ctx.fillStyle = '#ff7a5c';
     ctx.beginPath();
     ctx.moveTo(-f.size, 0);
     ctx.lineTo(-f.size - 8, -f.size * 0.5);
@@ -296,7 +296,7 @@ function drawBackground() {
     ctx.translate(s.x, s.y);
 
     const sway = Math.sin(s.sway) * 10;
-    ctx.strokeStyle = "#1ed38b";
+    ctx.strokeStyle = '#1ed38b';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(0, 0);
@@ -313,10 +313,10 @@ function drawBackground() {
     ctx.restore();
   }
 
-  ctx.fillStyle = "#1d5e4d";
+  ctx.fillStyle = '#1d5e4d';
   ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
 
-  ctx.fillStyle = "#347d66";
+  ctx.fillStyle = '#347d66';
   for (let x = 0; x < canvas.width; x += 38) {
     ctx.beginPath();
     ctx.moveTo(x, canvas.height);
@@ -328,7 +328,7 @@ function drawBackground() {
 
   for (const b of game.bubbles) {
     ctx.beginPath();
-    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
     ctx.fill();
   }
@@ -341,27 +341,27 @@ function drawFish() {
   ctx.translate(f.x, f.y);
   ctx.rotate(f.rot);
 
-  ctx.fillStyle = "rgba(0,0,0,0.18)";
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
   ctx.beginPath();
   ctx.ellipse(0, 18, 28, 11, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#4ec0d8";
+  ctx.fillStyle = '#4ec0d8';
   ctx.beginPath();
   ctx.ellipse(0, 0, 34, 16, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "rgba(255,255,255,0.25)";
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
   ctx.beginPath();
   ctx.ellipse(-6, -2, 18, 8, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#1a2d3a";
+  ctx.fillStyle = '#1a2d3a';
   ctx.beginPath();
   ctx.ellipse(-2, 0, 10, 12, 0.1, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "#1b2d3a";
+  ctx.strokeStyle = '#1b2d3a';
   ctx.lineWidth = 2;
   for (let i = -18; i <= 18; i += 7) {
     ctx.beginPath();
@@ -370,12 +370,12 @@ function drawFish() {
     ctx.stroke();
   }
 
-  ctx.fillStyle = "#1a2430";
+  ctx.fillStyle = '#1a2430';
   ctx.beginPath();
   ctx.ellipse(12, 2, 6, 8, 0.1, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#f7b152";
+  ctx.fillStyle = '#f7b152';
   ctx.beginPath();
   ctx.moveTo(-4, -12);
   ctx.lineTo(18, -34);
@@ -383,7 +383,7 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#f4805d";
+  ctx.fillStyle = '#f4805d';
   ctx.beginPath();
   ctx.moveTo(2, 12);
   ctx.lineTo(20, 34);
@@ -391,7 +391,7 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#f9c76d";
+  ctx.fillStyle = '#f9c76d';
   ctx.beginPath();
   ctx.moveTo(-3, -10);
   ctx.lineTo(-18, -30);
@@ -399,7 +399,7 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#ff9b64";
+  ctx.fillStyle = '#ff9b64';
   ctx.beginPath();
   ctx.moveTo(3, 10);
   ctx.lineTo(-18, 30);
@@ -407,7 +407,7 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#f56d4d";
+  ctx.fillStyle = '#f56d4d';
   ctx.beginPath();
   ctx.moveTo(-30, 0);
   ctx.lineTo(-56, -18);
@@ -416,7 +416,7 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#ff8f67";
+  ctx.fillStyle = '#ff8f67';
   ctx.beginPath();
   ctx.moveTo(-27, 0);
   ctx.lineTo(-46, -9);
@@ -424,22 +424,22 @@ function drawFish() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = "#fff";
+  ctx.fillStyle = '#fff';
   ctx.beginPath();
   ctx.arc(15, -5, 6.5, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#111";
+  ctx.fillStyle = '#111';
   ctx.beginPath();
   ctx.arc(17, -5, 2.5, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
   ctx.beginPath();
   ctx.arc(13, -7, 1.4, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "#111";
+  ctx.strokeStyle = '#111';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(22, 0);
@@ -455,11 +455,59 @@ function drawRock(rock) {
   const topHeight = rock.topHeight;
   const gap = rock.gap;
 
-  ctx.fillStyle = "#7a8d8d";
+  ctx.fillStyle = '#7a8d8d';
   ctx.beginPath();
   ctx.moveTo(x, 0);
   ctx.lineTo(x + width, 0);
   ctx.lineTo(x + width + 8, topHeight - 18);
   ctx.lineTo(x + width * 0.6, topHeight + 10);
-  ctx.lineTo(x + width * 0.3, top*
-
+  ctx.lineTo(x + width * 0.3, topHeight - 6);
+  ctx.lineTo(x - 4, topHeight - 10);
+  ctx.closePath();
+  ctx.fill();
+
+  const bottomY = topHeight + gap;
+  ctx.fillStyle = '#7a8d8d';
+  ctx.beginPath();
+  ctx.moveTo(x, canvas.height - 80);
+  ctx.lineTo(x + width, canvas.height - 80);
+  ctx.lineTo(x + width + 10, bottomY + 18);
+  ctx.lineTo(x + width * 0.7, bottomY + 6);
+  ctx.lineTo(x + width * 0.4, bottomY + 8);
+  ctx.lineTo(x - 4, bottomY + 18);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function render() {
+  drawBackground();
+  for (const rock of game.rocks) drawRock(rock);
+  drawFish();
+}
+
+function loop(ts) {
+  const dt = ts - (game.lastTime || ts);
+  game.lastTime = ts;
+
+  update(dt);
+  render();
+
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    flap();
+  }
+});
+
+canvas.addEventListener('pointerdown', () => flap());
+
+createBackgroundLife();
+resetGame();
+requestAnimationFrame(loop);
+</script>
+"""
+
+components.html(html, height=700, width=500)
