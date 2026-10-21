@@ -1,5 +1,4 @@
 import streamlit as st
-
 st.set_page_config(page_title="Fishy Dive", page_icon="🐠", layout="centered")
 st.title("Fishy Dive")
 st.caption("Nhấn Space hoặc click chuột để bơi qua các cục đá")
