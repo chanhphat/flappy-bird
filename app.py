@@ -1,4 +1,3 @@
-
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -6,7 +5,7 @@ st.set_page_config(page_title="Fishy Dive", page_icon="🐠", layout="centered")
 st.title("Fishy Dive")
 st.caption("Nhấn Space hoặc click chuột để bơi")
 
-html = '''
+html = """
 <div id="game-wrapper" style="display:flex; justify-content:center; align-items:center; margin-top:10px;">
   <div id="game" style="
       position:relative;
@@ -50,8 +49,45 @@ const game = {
   spawnTimer: 0,
   fish: { x: 110, y: 310, r: 18, vy: 0, rot: 0 },
   rocks: [],
-  bubbles: []
+  bubbles: [],
+  seaweeds: [],
+  tinyFish: []
 };
+
+function createBackgroundLife() {
+  game.seaweeds = [];
+  game.tinyFish = [];
+
+  for (let i = 0; i < 18; i++) {
+    game.seaweeds.push({
+      x: Math.random() * canvas.width,
+      y: canvas.height - 80 + Math.random() * 20,
+      h: 30 + Math.random() * 80,
+      speed: 0.5 + Math.random() * 1.2,
+      sway: Math.random() * Math.PI * 2
+    });
+  }
+
+  for (let i = 0; i < 7; i++) {
+    game.tinyFish.push({
+      x: Math.random() * canvas.width,
+      y: 80 + Math.random() * (canvas.height - 180),
+      size: 8 + Math.random() * 12,
+      speed: 0.3 + Math.random() * 0.8,
+      dir: Math.random() > 0.5 ? 1 : -1,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+function addBubble() {
+  game.bubbles.push({
+    x: Math.random() * canvas.width,
+    y: canvas.height + 10,
+    r: 4 + Math.random() * 8,
+    speed: 0.8 + Math.random() * 1.4
+  });
+}
 
 function resetGame() {
   game.running = false;
@@ -94,15 +130,6 @@ function flap() {
     resetGame();
     startGame();
   }
-}
-
-function addBubble() {
-  game.bubbles.push({
-    x: Math.random() * canvas.width,
-    y: canvas.height + 10,
-    r: 4 + Math.random() * 8,
-    speed: 0.8 + Math.random() * 1.4
-  });
 }
 
 function spawnRock() {
@@ -153,265 +180,5 @@ function update(dt) {
 
     const fishLeft = game.fish.x - game.fish.r;
     const fishRight = game.fish.x + game.fish.r;
-    const fishTop = game.fish.y - game.fish.r;
-    const fishBottom = game.fish.y + game.fish.r;
-
-    const rockLeft = rock.x;
-    const rockRight = rock.x + rock.width;
-    const topBottom = rock.topHeight;
-    const bottomTop = rock.topHeight + rock.gap;
-
-    const hitX = fishRight > rockLeft && fishLeft < rockRight;
-    const hitTop = fishTop < topBottom;
-    const hitBottom = fishBottom > bottomTop;
-
-    if (hitX && (hitTop || hitBottom)) {
-      endGame();
-    }
-  }
-
-  game.rocks = game.rocks.filter(r => r.x + r.width > -20);
-
-  if (game.fish.y - game.fish.r <= 0 || game.fish.y + game.fish.r >= canvas.height - 80) {
-    endGame();
-  }
-}
-
-function drawSeaweed(x, y, scale) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(scale, scale);
-
-  ctx.strokeStyle = "#18d38a";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-
-  for (let i = 0; i < 5; i++) {
-    const px = (i % 2 === 0 ? -8 : 8) * (1 + i * 0.25);
-    const py = -20 - i * 12;
-    ctx.quadraticCurveTo(px, py, 0, -30 - i * 14);
-  }
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawBackground() {
-  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  grad.addColorStop(0, "#071f39");
-  grad.addColorStop(0.5, "#0d4f7f");
-  grad.addColorStop(1, "#0aa4c8");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.strokeStyle = "rgba(255,255,255,0.09)";
-  ctx.lineWidth = 1;
-  for (let y = 30; y < canvas.height; y += 30) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.bezierCurveTo(canvas.width * 0.2, y - 12, canvas.width * 0.7, y + 12, canvas.width, y);
-    ctx.stroke();
-  }
-
-  for (let x = 0; x < canvas.width; x += 26) {
-    drawSeaweed(x, canvas.height - 80, 1 + (x % 3) * 0.32);
-  }
-
-  ctx.fillStyle = "#1d5e4d";
-  ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
-
-  ctx.fillStyle = "#347d66";
-  for (let x = 0; x < canvas.width; x += 38) {
-    ctx.beginPath();
-    ctx.moveTo(x, canvas.height);
-    ctx.lineTo(x + 18, canvas.height - 80);
-    ctx.lineTo(x + 36, canvas.height);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  for (const b of game.bubbles) {
-    ctx.beginPath();
-    ctx.fillStyle = "rgba(255,255,255,0.3)";
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-function drawFish() {
-  const f = game.fish;
-
-  ctx.save();
-  ctx.translate(f.x, f.y);
-  ctx.rotate(f.rot);
-
-  ctx.fillStyle = "rgba(0,0,0,0.18)";
-  ctx.beginPath();
-  ctx.ellipse(0, 18, 28, 11, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#4ec0d8";
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 34, 16, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "rgba(255,255,255,0.25)";
-  ctx.beginPath();
-  ctx.ellipse(-6, -2, 18, 8, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#1a2d3a";
-  ctx.beginPath();
-  ctx.ellipse(-2, 0, 10, 12, 0.1, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = "#1b2d3a";
-  ctx.lineWidth = 2;
-  for (let i = -18; i <= 18; i += 7) {
-    ctx.beginPath();
-    ctx.moveTo(i - 2, -9);
-    ctx.quadraticCurveTo(i + 8, 0, i + 3, 11);
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = "#1a2430";
-  ctx.beginPath();
-  ctx.ellipse(12, 2, 6, 8, 0.1, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#f7b152";
-  ctx.beginPath();
-  ctx.moveTo(-4, -12);
-  ctx.lineTo(18, -34);
-  ctx.lineTo(22, -14);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#f4805d";
-  ctx.beginPath();
-  ctx.moveTo(2, 12);
-  ctx.lineTo(20, 34);
-  ctx.lineTo(22, 12);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#f9c76d";
-  ctx.beginPath();
-  ctx.moveTo(-3, -10);
-  ctx.lineTo(-18, -30);
-  ctx.lineTo(8, -18);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#ff9b64";
-  ctx.beginPath();
-  ctx.moveTo(3, 10);
-  ctx.lineTo(-18, 30);
-  ctx.lineTo(10, 16);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#f56d4d";
-  ctx.beginPath();
-  ctx.moveTo(-30, 0);
-  ctx.lineTo(-56, -18);
-  ctx.lineTo(-56, 0);
-  ctx.lineTo(-56, 18);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#ff8f67";
-  ctx.beginPath();
-  ctx.moveTo(-27, 0);
-  ctx.lineTo(-46, -9);
-  ctx.lineTo(-46, 9);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#fff";
-  ctx.beginPath();
-  ctx.arc(15, -5, 6.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#111";
-  ctx.beginPath();
-  ctx.arc(17, -5, 2.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "rgba(255,255,255,0.8)";
-  ctx.beginPath();
-  ctx.arc(13, -7, 1.4, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = "#111";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(22, 0);
-  ctx.lineTo(30, 4);
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-function drawRock(rock) {
-  const x = rock.x;
-  const width = rock.width;
-  const topHeight = rock.topHeight;
-  const gap = rock.gap;
-
-  ctx.fillStyle = "#7a8d8d";
-  ctx.beginPath();
-  ctx.moveTo(x, 0);
-  ctx.lineTo(x + width, 0);
-  ctx.lineTo(x + width + 8, topHeight - 18);
-  ctx.lineTo(x + width * 0.6, topHeight + 10);
-  ctx.lineTo(x + width * 0.3, topHeight - 6);
-  ctx.lineTo(x - 4, topHeight - 10);
-  ctx.closePath();
-  ctx.fill();
-
-  const bottomY = topHeight + gap;
-  ctx.fillStyle = "#7a8d8d";
-  ctx.beginPath();
-  ctx.moveTo(x, canvas.height - 80);
-  ctx.lineTo(x + width, canvas.height - 80);
-  ctx.lineTo(x + width + 10, bottomY + 18);
-  ctx.lineTo(x + width * 0.7, bottomY + 6);
-  ctx.lineTo(x + width * 0.4, bottomY + 8);
-  ctx.lineTo(x - 4, bottomY + 18);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function render() {
-  drawBackground();
-  for (const rock of game.rocks) drawRock(rock);
-  drawFish();
-}
-
-function loop(ts) {
-  const dt = ts - (game.lastTime || ts);
-  game.lastTime = ts;
-
-  update(dt);
-  render();
-
-  requestAnimationFrame(loop);
-}
-
-document.addEventListener("keydown", (e) => {
-  if (e.code === "Space") {
-    e.preventDefault();
-    flap();
-  }
-});
-
-canvas.addEventListener("pointerdown", () => flap());
-
-resetGame();
-requestAnimationFrame(loop);
-</script>
-'''
-
-components.html(html, height=700, width=500)
-PY
+    const fish*
+
