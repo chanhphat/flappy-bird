@@ -1,3 +1,6 @@
+cd /mount/src/flappy-bird
+rm -f app.py
+cat > app.py <<'PY'
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -5,7 +8,7 @@ st.set_page_config(page_title="Fishy Dive", page_icon="🐠", layout="centered")
 st.title("Fishy Dive")
 st.caption("Nhấn Space hoặc click chuột để bơi")
 
-html = """
+html = '''
 <div id="game-wrapper" style="display:flex; justify-content:center; align-items:center; margin-top:10px;">
   <div id="game" style="
       position:relative;
@@ -192,69 +195,5 @@ function drawSeaweed(x, y, scale) {
     ctx.quadraticCurveTo(px, py, 0, -30 - i * 14);
   }
   ctx.stroke();
-  ctx.restore();
-}
-
-function drawBackground() {
-  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  grad.addColorStop(0, "#071f39");
-  grad.addColorStop(0.5, "#0d4f7f");
-  grad.addColorStop(1, "#0aa4c8");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.strokeStyle = "rgba(255,255,255,0.09)";
-  ctx.lineWidth = 1;
-  for (let y = 30; y < canvas.height; y += 30) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.bezierCurveTo(canvas.width * 0.2, y - 12, canvas.width * 0.7, y + 12, canvas.width, y);
-    ctx.stroke();
-  }
-
-  for (let x = 0; x < canvas.width; x += 26) {
-    drawSeaweed(x, canvas.height - 80, 1 + (x % 3) * 0.32);
-  }
-
-  ctx.fillStyle = "#1d5e4d";
-  ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
-
-  ctx.fillStyle = "#347d66";
-  for (let x = 0; x < canvas.width; x += 38) {
-    ctx.beginPath();
-    ctx.moveTo(x, canvas.height);
-    ctx.lineTo(x + 18, canvas.height - 80);
-    ctx.lineTo(x + 36, canvas.height);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  for (const b of game.bubbles) {
-    ctx.beginPath();
-    ctx.fillStyle = "rgba(255,255,255,0.3)";
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-function drawFish() {
-  const f = game.fish;
-
-  ctx.save();
-  ctx.translate(f.x, f.y);
-  ctx.rotate(f.rot);
-
-  // bóng dưới cá
-  ctx.fillStyle = "rgba(0,0,0,0.18)";
-  ctx.beginPath();
-  ctx.ellipse(0, 18, 28, 11, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // thân cá dẹp
-  ctx.fillStyle = "#4ec0d8";
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 34, 16, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // sáng trên thân*
+  ctx.restore*
 
