@@ -230,5 +230,7 @@ const gameOverSummary = document.getElementById("gameOverSummary");
 const themes = [
   {
     name: "biển ban ngày",
-    skyTop: "#](#)*
+    skyTop: "#071f39",
+    skyMid: "#0d4f7f",
+    skyBottom: "#0aa4c](#)*
 
