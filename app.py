@@ -1,91 +1,153 @@
 import streamlit as st
-import random
-import time
-from PIL import Image, ImageDraw
+from streamlit.components.v1 import html
 
-# --- Config ---
-MAP_SIZE = 10
-WALL_PROB = 0.12
-NUM_ENEMIES = 8
-NUM_TREASURES = 6
-TILE_SIZE = 64            # pixel size of each tile
-ANIM_FRAMES = 8           # số khung hình cho animation
-ANIM_DELAY = 0.03         # giây giữa các khung
+st.set_page_config(page_title="Flappy Bird", page_icon="🐦", layout="centered")
 
-# --- Helpers: tile drawing ---
-def make_tile_images(tile_size):
-    # create common tile images (PIL.Image)
-    floor = Image.new("RGBA", (tile_size, tile_size), (240, 240, 235, 255))
-    draw = ImageDraw.Draw(floor)
-    draw.rectangle([0, 0, tile_size-1, tile_size-1], outline=(200,200,190))
-    # subtle pattern
-    draw.line([(0, tile_size//2), (tile_size, tile_size//2)], fill=(230,230,225))
-    draw.line([(tile_size//2, 0), (tile_size//2, tile_size)], fill=(230,230,225))
+st.title("Flappy Bird trên Streamlit")
+st.caption("Nhấn Space hoặc click vào màn hình để bay")
 
-    wall = Image.new("RGBA", (tile_size, tile_size), (60, 60, 60, 255))
-    draw = ImageDraw.Draw(wall)
-    for i in range(0, tile_size, 8):
-        draw.line([(i, 0), (i, tile_size)], fill=(75,75,75))
-    draw.rectangle([0,0,tile_size-1,tile_size-1], outline=(30,30,30))
+GAME_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f4f8;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      border: 4px solid #1f2937;
+      border-radius: 10px;
+      background: linear-gradient(#87CEEB, #dff6ff);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      display: block;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="420" height="640"></canvas>
 
-    exit_img = Image.new("RGBA", (tile_size, tile_size), (210,180,140,255))
-    draw = ImageDraw.Draw(exit_img)
-    draw.rectangle([tile_size*0.25, tile_size*0.15, tile_size*0.75, tile_size*0.9], fill=(140,90,40))
-    draw.rectangle([tile_size*0.45, tile_size*0.45, tile_size*0.62, tile_size*0.62], fill=(220,200,140))
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-    treasure = Image.new("RGBA", (tile_size, tile_size), (0,0,0,0))
-    draw = ImageDraw.Draw(treasure)
-    cx, cy = tile_size//2, tile_size//2
-    r = tile_size*0.18
-    # simple gem: rotated square
-    coords = [(cx, cy-r), (cx+r, cy), (cx, cy+r), (cx-r, cy)]
-    draw.polygon(coords, fill=(255,215,0), outline=(200,170,0))
+    const groundHeight = 90;
+    const gravity = 0.55;
+    const flapForce = -8.5;
+    const pipeWidth = 70;
+    const pipeGap = 150;
+    const pipeSpeed = 2.4;
 
-    enemy = Image.new("RGBA", (tile_size, tile_size), (0,0,0,0))
-    draw = ImageDraw.Draw(enemy)
-    draw.ellipse([tile_size*0.15, tile_size*0.15, tile_size*0.85, tile_size*0.85], fill=(200,50,50))
-    draw.rectangle([tile_size*0.28, tile_size*0.4, tile_size*0.4, tile_size*0.55], fill=(0,0,0))
-    draw.rectangle([tile_size*0.6, tile_size*0.4, tile_size*0.72, tile_size*0.55], fill=(0,0,0))
+    let bird = {
+      x: 90,
+      y: canvas.height / 2,
+      radius: 16,
+      velocity: 0
+    };
 
-    player = Image.new("RGBA", (tile_size, tile_size), (0,0,0,0))
-    draw = ImageDraw.Draw(player)
-    draw.ellipse([tile_size*0.18, tile_size*0.12, tile_size*0.82, tile_size*0.72], fill=(50,110,200))
-    draw.rectangle([tile_size*0.35, tile_size*0.6, tile_size*0.65, tile_size*0.9], fill=(30,70,160))
+    let pipes = [];
+    let score = 0;
+    let bestScore = Number(localStorage.getItem("flappyBest") || 0);
+    let lastPipeTime = 0;
+    let gameOver = false;
+    let started = false;
 
-    return {
-        "floor": floor,
-        "wall": wall,
-        "exit": exit_img,
-        "treasure": treasure,
-        "enemy": enemy,
-        "player": player
+    function resetGame() {
+      bird.y = canvas.height / 2;
+      bird.velocity = 0;
+      pipes = [];
+      score = 0;
+      lastPipeTime = 0;
+      gameOver = false;
+      started = false;
     }
 
-def render_map_image(grid, player_pos_f, enemies, treasures, exit_pos, tiles):
-    size = len(grid)
-    img = Image.new("RGBA", (size * TILE_SIZE, size * TILE_SIZE), (20, 20, 20, 255))
-    for y, row in enumerate(grid):
-        for x, cell in enumerate(row):
-            px = x * TILE_SIZE
-            py = y * TILE_SIZE
-            base = tiles["floor"] if cell == "." else tiles["wall"]
-            img.paste(base, (px, py), base)
-            if (x, y) == exit_pos:
-                img.paste(tiles["exit"], (px, py), tiles["exit"])
-            if (x, y) in treasures:
-                img.paste(tiles["treasure"], (px, py), tiles["treasure"])
-            if (x, y) in enemies:
-                img.paste(tiles["enemy"], (px, py), tiles["enemy"])
+    function flap() {
+      if (gameOver) {
+        resetGame();
+      }
+      if (!started) {
+        started = true;
+      }
+      bird.velocity = flapForce;
+    }
 
-    # draw player at fractional position (pixels)
-    player_px = int(player_pos_f[0] * TILE_SIZE)
-    player_py = int(player_pos_f[1] * TILE_SIZE)
-    img.paste(tiles["player"], (player_px, player_py), tiles["player"])
-    # optional grid lines
-    draw = ImageDraw.Draw(img)
-    for i in range(size+1):
-        draw.line([(i*TILE_SIZE,0),(i*TILE_SIZE,size*TILE_SIZE)], fill=(40,40,40,100))
-        draw.line([(0,i*TILE_SIZE),(size*TILE_SIZE,i*TILE_SIZE)], fill=(40,40,40,100))
-    return img
+    function createPipe() {
+      const minHeight = 60;
+      const maxHeight = canvas.height - groundHeight - pipeGap - 60;
+      const topHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+      pipes.push({
+        x: canvas.width + 20,
+        topHeight,
+        passed: false
+      });
+    }
 
-# --- Map & game helpers (same logic as before)
+    function update() {
+      if (!started || gameOver) return;
+
+      bird.velocity += gravity;
+      bird.y += bird.velocity;
+
+      const now = performance.now();
+      if (now - lastPipeTime > 1500) {
+        lastPipeTime = now;
+        createPipe();
+      }
+
+      for (let i = pipes.length - 1; i >= 0; i--) {
+        const pipe = pipes[i];
+        pipe.x -= pipeSpeed;
+
+        if (!pipe.passed && pipe.x + pipeWidth < bird.x) {
+          pipe.passed = true;
+          score += 1;
+          if (score > bestScore) {
+            bestScore = score;
+            localStorage.setItem("flappyBest", bestScore);
+          }
+        }
+
+        const hitPipeX = bird.x + bird.radius > pipe.x && bird.x - bird.radius < pipe.x + pipeWidth;
+        const hitTop = bird.y - bird.radius < pipe.topHeight;
+        const hitBottom = bird.y + bird.radius > pipe.topHeight + pipeGap;
+
+        if (hitPipeX && (hitTop || hitBottom)) {
+          gameOver = true;
+        }
+
+        if (pipe.x + pipeWidth < 0) {
+          pipes.splice(i, 1);
+        }
+      }
+
+      const groundTop = canvas.height - groundHeight;
+      if (bird.y + bird.radius >= groundTop || bird.y - bird.radius <= 0) {
+        gameOver = true;
+      }
+    }
+
+    function drawBackground() {
+      ctx.fillStyle = "#87CEEB";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#7EC8E3";
+      for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.arc(60 + i * 90, 80 + (i % 2) * 20, 24, 0, Math.PI * 2);
+        ctx.arc(95 + i * 90, 80 + (i % 2) * 20, 30, 0, Math.PI * 2);
+        ctx.arc(130 + i * 90, 80 + (i % 2) * 20, 22, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawGround() {
+      const groundY = canvas.height - groundHeight;
+      ctx.fillStyle = "#7ac142";
+      ctx.fillRect(0, groundY, canvas.width, ground*
+
