@@ -201,5 +201,5 @@ html = """
     <div class="panel-box">
       <div class="title" style="font-size:28px;">Cửa hàng cá</div>
       <div class="row">
-        <div class="small-text">Điểm hiện có</div>*
+        <div class="small-text">Điểm hiện*
 
