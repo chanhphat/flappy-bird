@@ -5,7 +5,7 @@ st.set_page_config(page_title="Fishy Dive", page_icon="🐠", layout="centered")
 st.title("Fishy Dive")
 st.caption("Chơi, kiếm điểm, mở khóa skin cá mới")
 
-html = """
+html = '''
 <style>
   * { box-sizing: border-box; }
   body {
@@ -364,29 +364,86 @@ const game = {
   rocks: [],
   bubbles: [],
   seaweeds: [],
-  tinyFish: []
+  tinyFish: [],
+  coral: [],
+  sceneIndex: 0
 };
+
+function getSceneIndex() {
+  return Math.floor(game.score / 50) % 3;
+}
+
+function getSceneTheme() {
+  const themes = [
+    {
+      sky1: "#060d18",
+      sky2: "#1d2a38",
+      deep: "#08131e",
+      ground: "#253847",
+      accent: "#8ec9ff",
+      glow: "#e4f7ff",
+      coral: "#6a8ea0",
+      foam: "#dfeefc"
+    },
+    {
+      sky1: "#0b2b45",
+      sky2: "#167f9c",
+      deep: "#0d435a",
+      ground: "#0e5f4c",
+      accent: "#ffd27a",
+      glow: "#fff6c8",
+      coral: "#ff7a9b",
+      foam: "#d8f8ff"
+    },
+    {
+      sky1: "#123c1f",
+      sky2: "#2a845d",
+      deep: "#0f563e",
+      ground: "#1c6d49",
+      accent: "#d8ff8d",
+      glow: "#f3ffd9",
+      coral: "#87ec96",
+      foam: "#e6ffd5"
+    }
+  ];
+  return themes[getSceneIndex()];
+}
 
 function createBackgroundLife() {
   game.seaweeds = [];
   game.tinyFish = [];
-  for (let i = 0; i < 18; i++) {
+  game.coral = [];
+
+  for (let i = 0; i < 26; i++) {
     game.seaweeds.push({
       x: Math.random() * canvas.width,
-      y: canvas.height - 80 + Math.random() * 20,
-      h: 30 + Math.random() * 80,
+      y: canvas.height - 82 + Math.random() * 20,
+      h: 30 + Math.random() * 90,
       speed: 0.5 + Math.random() * 1.2,
-      sway: Math.random() * Math.PI * 2
+      sway: Math.random() * Math.PI * 2,
+      color: i % 2 === 0 ? "#3dd5a4" : "#88dc86"
     });
   }
-  for (let i = 0; i < 7; i++) {
+
+  for (let i = 0; i < 18; i++) {
+    game.coral.push({
+      x: 20 + Math.random() * (canvas.width - 40),
+      baseY: canvas.height - 68 + Math.random() * 16,
+      height: 18 + Math.random() * 80,
+      spread: 8 + Math.random() * 26,
+      color: ["#ff7a92", "#ffb86f", "#ffcc99", "#90e0ff", "#7bd39d", "#d8a4ff"][i % 6]
+    });
+  }
+
+  for (let i = 0; i < 14; i++) {
     game.tinyFish.push({
       x: Math.random() * canvas.width,
-      y: 80 + Math.random() * (canvas.height - 180),
-      size: 8 + Math.random() * 12,
+      y: 50 + Math.random() * (canvas.height - 150),
+      size: 5 + Math.random() * 9,
       speed: 0.3 + Math.random() * 0.8,
       dir: Math.random() > 0.5 ? 1 : -1,
-      phase: Math.random() * Math.PI * 2
+      phase: Math.random() * Math.PI * 2,
+      color: ["#ffe77c", "#ffd166", "#9ef2ff", "#9cf7b7", "#ffc0cb", "#ffd2a8", "#dcb8ff"][i % 7]
     });
   }
 }
@@ -402,6 +459,7 @@ function resetGame() {
   game.fish.y = 310;
   game.fish.vy = 0;
   game.fish.rot = 0;
+  game.sceneIndex = 0;
   scoreText.textContent = "0";
 }
 
@@ -458,6 +516,8 @@ function update(dt) {
   game.fish.vy += 0.42 * dt * 0.06;
   game.fish.y += game.fish.vy * dt * 0.06;
   game.fish.rot = Math.max(-1.25, Math.min(1.5, game.fish.vy / 10));
+
+  game.sceneIndex = getSceneIndex();
 
   game.spawnTimer += dt;
   if (game.spawnTimer >= 1700) {
@@ -528,14 +588,16 @@ function update(dt) {
 }
 
 function drawBackground() {
+  const theme = getSceneTheme();
+
   const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  grad.addColorStop(0, "#071f39");
-  grad.addColorStop(0.45, "#0d4f7f");
-  grad.addColorStop(1, "#0aa4c8");
+  grad.addColorStop(0, theme.sky1);
+  grad.addColorStop(0.45, theme.sky2);
+  grad.addColorStop(1, theme.deep);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.strokeStyle = "rgba(255,255,255,0.09)";
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
   ctx.lineWidth = 1;
   for (let y = 30; y < canvas.height; y += 30) {
     ctx.beginPath();
@@ -544,64 +606,119 @@ function drawBackground() {
     ctx.stroke();
   }
 
-  for (const f of game.tinyFish) {
-    ctx.save();
-    ctx.translate(f.x, f.y);
-    ctx.scale(f.dir, 1);
-
-    ctx.fillStyle = "rgba(120,220,255,0.7)";
-    ctx.beginPath();
-    ctx.ellipse(0, 0, f.size, f.size * 0.52, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "rgba(255,255,255,0.7)";
-    ctx.beginPath();
-    ctx.arc(f.size * 0.3, -1, f.size * 0.15, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#ff7a5c";
-    ctx.beginPath();
-    ctx.moveTo(-f.size, 0);
-    ctx.lineTo(-f.size - 8, -f.size * 0.5);
-    ctx.lineTo(-f.size - 8, f.size * 0.5);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
-  }
-
-  for (const s of game.seaweeds) {
-    ctx.save();
-    ctx.translate(s.x, s.y);
-
-    const sway = Math.sin(s.sway) * 10;
-    ctx.strokeStyle = "#1ed38b";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-
-    let px = 0;
-    let py = 0;
-    for (let i = 1; i <= 6; i++) {
-      px = (i % 2 === 0 ? -1 : 1) * (6 + i * 2) + sway * 0.2;
-      py = -s.h * (i / 7);
-      ctx.quadraticCurveTo(px, py, 0, -s.h * (i / 6));
+  if (getSceneIndex() === 0) {
+    ctx.fillStyle = "rgba(255,255,255,0.06)";
+    for (let i = 0; i < 18; i++) {
+      const x = (i * 37 + (game.score * 0.3)) % canvas.width;
+      const y = 50 + (i * 19) % (canvas.height - 150);
+      ctx.beginPath();
+      ctx.arc(x, y, 2 + (i % 3), 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    ctx.stroke();
-    ctx.restore();
+    for (const f of game.tinyFish) {
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.fillStyle = "#dfefff";
+      ctx.shadowColor = "#8fd1ff";
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, f.size + 2, f.size * 0.7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
-  ctx.fillStyle = "#1d5e4d";
+  if (getSceneIndex() === 1) {
+    for (const c of game.coral) {
+      ctx.save();
+      ctx.translate(c.x, c.baseY);
+
+      ctx.fillStyle = c.color;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-c.spread, -c.height);
+      ctx.lineTo(-c.spread * 0.35, -c.height * 0.4);
+      ctx.lineTo(0, -c.height * 0.7);
+      ctx.lineTo(c.spread * 0.35, -c.height * 0.4);
+      ctx.lineTo(c.spread, -c.height);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#ffdca8";
+      ctx.beginPath();
+      ctx.arc(0, -c.height * 0.82, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    for (const f of game.tinyFish) {
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.scale(f.dir, 1);
+
+      ctx.fillStyle = f.color;
+      ctx.shadowColor = f.color;
+      ctx.shadowBlur = 9;
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, f.size + 4, f.size * 0.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.beginPath();
+      ctx.arc(f.size * 0.6, -1, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  if (getSceneIndex() === 2) {
+    for (const s of game.seaweeds) {
+      ctx.save();
+      ctx.translate(s.x, s.y);
+
+      const sway = Math.sin(s.sway) * 10;
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+
+      let px = 0;
+      let py = 0;
+      for (let i = 1; i <= 6; i++) {
+        px = (i % 2 === 0 ? -1 : 1) * (6 + i * 2) + sway * 0.2;
+        py = -s.h * (i / 7);
+        ctx.quadraticCurveTo(px, py, 0, -s.h * (i / 6));
+      }
+
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    for (const f of game.tinyFish) {
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.fillStyle = "#d8ffb8";
+      ctx.shadowColor = "#b1ef85";
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, f.size + 2, f.size * 0.7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  ctx.fillStyle = theme.ground;
   ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
 
-  ctx.fillStyle = "#347d66";
   for (let x = 0; x < canvas.width; x += 38) {
     ctx.beginPath();
     ctx.moveTo(x, canvas.height);
     ctx.lineTo(x + 18, canvas.height - 80);
     ctx.lineTo(x + 36, canvas.height);
     ctx.closePath();
+    ctx.fillStyle = theme.ground;
     ctx.fill();
   }
 
@@ -941,6 +1058,6 @@ showScreen("start");
 resetGame();
 requestAnimationFrame(loop);
 </script>
-"""
+'''
 
 components.html(html, height=700, width=500)
