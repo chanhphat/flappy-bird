@@ -189,5 +189,51 @@ html = """
       <div class="score-badge">Điểm của bạn: <span id="homePoints">0</span></div>
       <div class="button-row">
         <button id="startBtn" class="primary">Chơi</button>
-        <*
+        <button id="shopBtn" class="secondary">Cửa hàng</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shopScreen" class="panel hidden">
+    <div class="panel-box">
+      <div class="title" style="font-size:28px;">Cửa hàng cá</div>
+      <div class="row">
+        <div class="small-text">Điểm hiện có</div>
+        <div class="small-text" id="shopPoints">0</div>
+      </div>
+      <div id="shopList" class="shop-list"></div>
+      <div class="button-row" style="margin-top:16px;">
+        <button id="backToMenuBtn" class="secondary">Quay lại</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameOverScreen" class="panel hidden">
+    <div class="panel-box">
+      <div class="title" style="font-size:28px;">Game Over</div>
+      <div class="subtitle" id="gameOverMessage">Bạn đã kiếm được 0 điểm</div>
+      <div class="button-row">
+        <button id="playAgainBtn" class="primary">Chơi lại</button>
+        <button id="shopFromGameBtn" class="secondary">Cửa hàng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const scoreText = document.getElementById("scoreText");
+const startScreen = document.getElementById("startScreen");
+const shopScreen = document.getElementById("shopScreen");
+const gameOverScreen = document.getElementById("gameOverScreen");
+const homePoints = document.getElementById("homePoints");
+const shopPoints = document.getElementById("shopPoints");
+const shopList = document.getElementById("shopList");
+const gameOverMessage = document.getElementById("gameOverMessage");
+
+const fishCatalog = [
+  { id: "classic", name: "Cá xanh", price: 0, kind: "classic", body: "#4ec0d8", fin: "#f7b152", accent: "#f4805d", shadow: "#1a2d3a" },
+  { id: "coral", name: "Cá san hô", price: 12, kind: "classic", body: "#ff8e5d", fin: "#ffd166", accent: "#ff6b6b", shadow: "#7a3a2c" },
+  { id: "moon](#)*
 
